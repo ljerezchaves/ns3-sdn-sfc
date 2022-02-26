@@ -1,6 +1,9 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
  * Copyright (c) 2007 Emmanuelle Laprise
+ * Copyright (c) 2012 Jeffrey Young
+ * Copyright (c) 2014 Murphy McCauley
+ * Copyright (c) 2017 Luciano Jerez Chaves
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -16,6 +19,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Emmanuelle Laprise<emmanuelle.laprise@bluekazoo.ca>
+ * Author: Jeff Young <jyoung9@gatech.edu>
+ * Author: Murphy McCauley <murphy.mccauley@gmail.com>
+ * Author: Luciano Jerez Chaves <luciano@lrc.ic.unicamp.br>
  */
 
 #ifndef CSMA_CHANNEL_H
@@ -25,6 +31,7 @@
 #include "ns3/ptr.h"
 #include "ns3/nstime.h"
 #include "ns3/data-rate.h"
+#include "ns3/boolean.h"
 
 namespace ns3 {
 
@@ -34,17 +41,18 @@ class CsmaNetDevice;
 
 /**
  * \ingroup csma
- * \brief CsmaNetDevice Record 
+ * \brief CsmaNetDevice Record
  *
  * Stores the information related to each net device that is
- * connected to the channel. 
+ * connected to the channel.
  */
-class CsmaDeviceRec {
+class CsmaDeviceRec
+{
 public:
   Ptr< CsmaNetDevice > devicePtr; //!< Pointer to the net device
   bool                 active;    //!< Is net device enabled to TX/RX
 
-  CsmaDeviceRec();
+  CsmaDeviceRec ();
 
   /**
    * \brief Constructor
@@ -52,7 +60,7 @@ public:
    *
    * \param device the device to record
    */
-  CsmaDeviceRec(Ptr< CsmaNetDevice > device);
+  CsmaDeviceRec (Ptr< CsmaNetDevice > device);
 
   /**
    * Copy constructor
@@ -69,7 +77,7 @@ public:
 
 /**
  * Current state of the channel
- */ 
+ */
 enum WireState
 {
   IDLE,            /**< Channel is IDLE, no packet is being transmitted */
@@ -85,12 +93,15 @@ enum WireState
  * when many nodes are connected to one wire. It uses a single busy
  * flag to indicate if the channel is currently in use. It does not
  * take into account the distances between stations or the speed of
- * light to determine collisions.
+ * light to determine collisions. Optionally, it allows for full-
+ * duplex operation when there are only two attached nodes. To
+ * implement full-duplex, we internally keep two TX "subchannels"
+ * (one for each attached node). When in half-duplex mode, only
+ * the first subchannel is used.
  */
-class CsmaChannel : public Channel 
+class CsmaChannel : public Channel
 {
 public:
-
   /**
    * \brief Get the type ID.
    * \return the object TypeId
@@ -148,7 +159,7 @@ public:
    * or transmit packets. The net device must have been previously
    * attached to the channel using the attach function.
    *
-   * \param deviceId The device ID assigned to the net device when it
+   * \param deviceId The deviceID assigned to the net device when it
    * was connected to the channel
    * \return True if the device is found and is not attached to the
    * channel, false if the device is currently connected to the
@@ -197,19 +208,25 @@ public:
    * packet p as the m_currentPkt, the packet being currently
    * transmitting.
    *
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
+   *
    * \return Returns true unless the source was detached before it
    * completed its transmission.
    */
-  bool TransmitEnd ();
+  bool TransmitEnd (uint32_t deviceId);
 
   /**
    * \brief Indicates that the channel has finished propagating the
    * current packet. The channel is released and becomes free.
    *
-   * Calls the receive function of every active net device that is
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
+   *
+   * Calls the receive function of the other net device that is
    * attached to the channel.
    */
-  void PropagationCompleteEvent ();
+  void PropagationCompleteEvent (uint32_t deviceId);
 
   /**
    * \return Returns the device number assigned to a net device by the
@@ -221,30 +238,44 @@ public:
   int32_t GetDeviceNum (Ptr<CsmaNetDevice> device);
 
   /**
+   * \brief Checks the state of the channel.
+   *
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
    * \return Returns the state of the channel (IDLE -- free,
    * TRANSMITTING -- busy, PROPAGATING - busy )
    */
-  WireState GetState ();
+  WireState GetState (uint32_t deviceId);
 
   /**
    * \brief Indicates if the channel is busy. The channel will only
    * accept new packets for transmission if it is not busy.
    *
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
    * \return Returns true if the channel is busy and false if it is
    * free.
    */
-  bool IsBusy ();
+  bool IsBusy (uint32_t deviceId);
 
   /**
    * \brief Indicates if a net device is currently attached or
    * detached from the channel.
    *
-   * \param deviceId The ID that was assigned to the net device when
-   * it was attached to the channel.
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
    * \return Returns true if the net device is attached to the
    * channel, false otherwise.
    */
   bool IsActive (uint32_t deviceId);
+
+  /**
+   * \brief Indicates if channel is operating in full-duplex mode.
+   *
+   * \return Returns true if channel is in full-duplex mode, false if in
+   * half-duplex mode.
+   */
+  bool IsFullDuplex (void) const;
 
   /**
    * \return Returns the number of net devices that are currently
@@ -319,6 +350,11 @@ private:
   Time          m_delay;
 
   /**
+   * Whether the channel is in full-duplex mode.
+   */
+  bool          m_fullDuplex;
+
+  /**
    * List of the net devices that have been or are currently connected
    * to the channel.
    *
@@ -332,23 +368,76 @@ private:
   std::vector<CsmaDeviceRec> m_deviceList;
 
   /**
-   * The Packet that is currently being transmitted on the channel (or last
-   * packet to have been transmitted on the channel if the channel is
-   * free.)
+   * The Packet that is currently being transmitted on the subchannel (or the
+   * last packet to have been transmitted if the subchannel is free).
+   * In half-duplex mode, only the first subchannel is used.
    */
-  Ptr<Packet> m_currentPkt;
+  Ptr<Packet>   m_currentPkt[2];
 
   /**
    * Device Id of the source that is currently transmitting on the
+   * subchannel, or the last source to have transmitted a packet on the
+   * subchannel, if it is not currently busy.
+   * In half-duplex mode, only the first subchannel is used.
+   */
+  uint32_t      m_currentSrc[2];
+
+  /**
+   * Current state of each subchannel.
+   * In half-duplex mode, only the first subchannel is used.
+   */
+  WireState     m_state[2];
+
+  /**
+   * \brief Gets current packet
+   *
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
+   * \return Device Id of the source that is currently transmitting on the
+   * subchannel or the last source to have transmitted a packet on the
+   * subchannel, if it is not currently busy.
+   */
+  Ptr<Packet> GetCurrentPkt (uint32_t deviceId);
+
+  /**
+   * \brief Sets the current packet
+   *
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
+   * \param The Packet that is current being transmitted by deviceId (or last
+   * packet to have been transmitted on the channel if the channel is free.)
+   */
+  void SetCurrentPkt (uint32_t deviceId, Ptr<Packet> pkt);
+
+  /**
+   * \brief Gets current transmitter
+   *
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
+   * \return Device Id of the source that is currently transmitting on the
    * channel. Or last source to have transmitted a packet on the
    * channel, if the channel is currently not busy.
    */
-  uint32_t                            m_currentSrc;
+  uint32_t GetCurrentSrc (uint32_t deviceId);
 
   /**
-   * Current state of the channel
+   * \brief Sets the current transmitter
+   *
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
+   * \param transmitterId The ID of the transmitting device.
    */
-  WireState          m_state;
+  void SetCurrentSrc (uint32_t deviceId, uint32_t transmitterId);
+
+  /**
+   * \brief Sets the state of the channel
+   *
+   * \param deviceId The deviceID assigned to the net device when it
+   * was connected to the channel
+   * \param state The new channel state.
+   */
+  void SetState (uint32_t deviceId, WireState state);
+
 };
 
 } // namespace ns3

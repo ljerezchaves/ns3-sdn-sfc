@@ -76,9 +76,7 @@ EnableProgress (int interval)
 {
   if (interval)
     {
-      std::cout << "Current simulation time: "
-                << Simulator::Now ().As (Time::S)
-                << std::endl;
+      std::cout << "Simulation time: " << Simulator::Now ().As (Time::S) << std::endl;
       Simulator::Schedule (Seconds (interval), &EnableProgress, interval);
     }
 }
@@ -103,6 +101,8 @@ EnableVerbose (bool enable)
       LogLevel logLevelAll = static_cast<ns3::LogLevel> (
           LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_ALL);
       NS_UNUSED (logLevelAll);
+
+      LogComponentEnable ("SdnController",            logLevelWarnInfo);
 
       // OFSwitch13 module components.
       LogComponentEnable ("OFSwitch13Controller",     logLevelWarn);

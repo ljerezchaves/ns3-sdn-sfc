@@ -29,14 +29,6 @@ SdnController::~SdnController ()
   NS_LOG_FUNCTION (this);
 }
 
-void
-SdnController::DoDispose ()
-{
-  NS_LOG_FUNCTION (this);
-
-  OFSwitch13Controller::DoDispose ();
-}
-
 TypeId
 SdnController::GetTypeId (void)
 {
@@ -45,6 +37,14 @@ SdnController::GetTypeId (void)
     .AddConstructor<SdnController> ()
   ;
   return tid;
+}
+
+void
+SdnController::DoDispose ()
+{
+  NS_LOG_FUNCTION (this);
+
+  OFSwitch13Controller::DoDispose ();
 }
 
 ofl_err

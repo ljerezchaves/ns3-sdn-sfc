@@ -28,9 +28,6 @@ public:
   SdnController ();          //!< Default constructor.
   virtual ~SdnController (); //!< Dummy destructor.
 
-  /** Destructor implementation */
-  virtual void DoDispose ();
-
   /**
    * Register this type.
    * \return The object TypeId.
@@ -38,6 +35,9 @@ public:
   static TypeId GetTypeId (void);
 
 protected:
+  /** Destructor implementation */
+  virtual void DoDispose ();
+
   // Inherited from OFSwitch13Controller
   ofl_err HandlePacketIn (struct ofl_msg_packet_in *msg, Ptr<const RemoteSwitch> swtch, uint32_t xid);
   void HandshakeSuccessful (Ptr<const RemoteSwitch> swtch);

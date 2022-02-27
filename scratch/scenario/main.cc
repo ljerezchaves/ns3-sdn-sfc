@@ -19,6 +19,8 @@
 #include <ns3/core-module.h>
 #include <ns3/internet-module.h>
 #include <ns3/ofswitch13-module.h>
+#include "sdn-network.h"
+#include "sdn-controller.h"
 
 using namespace ns3;
 
@@ -45,19 +47,25 @@ main (int argc, char *argv[])
   cmd.Parse (argc, argv);
   ForceDefaults ();
 
-  // Populate routing tables.
-  Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
-
   // Enable verbose output, library log, and progress report for debug purposes.
-  std::cout << "Simulating..." << std::endl;
   EnableLibLog (libLog);
   EnableProgress (progress);
   EnableVerbose (verbose);
 
+  // Create the SDN network.
+  Ptr<SdnNetwork> sdnNetwork = CreateObject<SdnNetwork> ();
+
+  // Populate routing tables.
+  Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+
   // Start the simulation.
+  std::cout << "Simulating..." << std::endl;
   Simulator::Stop (Seconds (simTime) + MilliSeconds (100));
   Simulator::Run ();
+  std::cout << "Done!" << std::endl;
   Simulator::Destroy ();
+  sdnNetwork->Dispose ();
+  sdnNetwork = 0;
 
   return 0;
 }
@@ -102,7 +110,8 @@ EnableVerbose (bool enable)
           LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_ALL);
       NS_UNUSED (logLevelAll);
 
-      LogComponentEnable ("SdnController",            logLevelWarnInfo);
+      LogComponentEnable ("SdnController",            logLevelAll);
+      LogComponentEnable ("SdnNetwork",               logLevelAll);
 
       // OFSwitch13 module components.
       LogComponentEnable ("OFSwitch13Controller",     logLevelWarn);

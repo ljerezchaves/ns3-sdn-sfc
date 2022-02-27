@@ -33,7 +33,7 @@ namespace ns3 {
  *
  * This class is a very simple IPv4 address generator.  You can think of it
  * as a simple local number incrementer.  It has no notion that IP addresses
- * are part of a global address space.  If you have a complicated address 
+ * are part of a global address space.  If you have a complicated address
  * assignment situation you may want to look at the Ipv4AddressGenerator which
  * does recognize that IP address and network number generation is part of a
  * global problem.  Ipv4AddressHelper is a simple class to make simple problems
@@ -61,7 +61,7 @@ public:
    * @param mask the address mask
    * @param base the host part to start from
    */
-  Ipv4AddressHelper (Ipv4Address network, Ipv4Mask mask, 
+  Ipv4AddressHelper (Ipv4Address network, Ipv4Mask mask,
                      Ipv4Address base = "0.0.0.1");
 
   /**
@@ -92,7 +92,7 @@ public:
    * IP address allocation.  Will be combined (ORed) with the network number to
    * generate the first IP address.  Defaults to 0.0.0.1.
    */
-  void SetBase (Ipv4Address network, Ipv4Mask mask, 
+  void SetBase (Ipv4Address network, Ipv4Mask mask,
                 Ipv4Address base = "0.0.0.1");
 
   /**
@@ -178,6 +178,24 @@ public:
    * @see NewNetwork
    */
   Ipv4InterfaceContainer Assign (const NetDeviceContainer &c);
+
+  /**
+   * Get the IP address assigned to a NetDevice for the given
+   * Ipv4InterfaceAddress index.
+   * \param device The NetDevice.
+   * \param addrIndex The Ipv4InterfaceAddress index.
+   * \return The IP address value.
+   */
+  static Ipv4Address GetAddress (Ptr<const NetDevice> device, uint32_t addrIndex = 0);
+
+  /**
+   * Get the IP maks assigned to a NetDevice for the given
+   * Ipv4InterfaceAddress index.
+   * \param device The NetDevice.
+   * \param addrIndex The Ipv4InterfaceAddress index.
+   * \return The IP address value.
+   */
+  static Ipv4Mask GetMask (Ptr<const NetDevice> device, uint32_t addrIndex = 0);
 
 private:
   /**

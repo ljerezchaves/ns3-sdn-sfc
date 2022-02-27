@@ -173,6 +173,8 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_coreToServer1UlinkPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
   m_server1ToCoreUlinkPort = m_coreServer1Device->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
+  m_coreToServer1UlinkChannel = DynamicCast<CsmaChannel> (
+    DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
 
   // Core to server 2 downlink.
   csmaDevices = csmaHelper.Install (m_coreSwitchNode, m_coreServer2Node);
@@ -185,6 +187,8 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_coreToServer2UlinkPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
   m_server2ToCoreUlinkPort = m_coreServer2Device->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
+  m_coreToServer2UlinkChannel = DynamicCast<CsmaChannel> (
+    DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
 
   // Edge 1 to server downlink.
   csmaDevices = csmaHelper.Install (m_edge1SwitchNode, m_edge1ServerNode);
@@ -197,6 +201,8 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_edge1ToServerUlinkPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
   m_serverToEdge1UlinkPort = m_edge1ServerDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
+  m_edge1ToServerUlinkChannel = DynamicCast<CsmaChannel> (
+    DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
 
   // Edge 2 to server downlink.
   csmaDevices = csmaHelper.Install (m_edge2SwitchNode, m_edge2ServerNode);
@@ -209,6 +215,8 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_edge2ToServerUlinkPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
   m_serverToEdge2UlinkPort = m_edge2ServerDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
+  m_edge2ToServerUlinkChannel = DynamicCast<CsmaChannel> (
+    DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
 
   // ---------------------------------------------------------------------------
   // Connect each host to the proper network switch

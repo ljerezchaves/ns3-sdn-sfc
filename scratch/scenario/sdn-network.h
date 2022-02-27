@@ -111,6 +111,11 @@ public:
   Ptr<OFSwitch13Port>           m_serverToEdge1DlinkPort;
   Ptr<OFSwitch13Port>           m_serverToEdge2UlinkPort;
   Ptr<OFSwitch13Port>           m_serverToEdge2DlinkPort;
+
+  Ptr<CsmaChannel>              m_coreToServer1UlinkChannel;
+  Ptr<CsmaChannel>              m_coreToServer2UlinkChannel;
+  Ptr<CsmaChannel>              m_edge1ToServerUlinkChannel;
+  Ptr<CsmaChannel>              m_edge2ToServerUlinkChannel;
 };
 
 #endif /* SDN_NETWORK_H */

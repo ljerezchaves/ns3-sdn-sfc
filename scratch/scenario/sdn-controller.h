@@ -51,7 +51,44 @@ protected:
   void HandshakeSuccessful (Ptr<const RemoteSwitch> swtch);
 
 private:
+  /**
+   * Extract an IPv4 address from packet match.
+   * \param oxm_of The OXM_IF_* IPv4 field.
+   * \param match The ofl_match structure pointer.
+   * \return The IPv4 address.
+   */
+  Ipv4Address ExtractIpv4Address (uint32_t oxm_of, struct ofl_match* match);
+
+  /**
+   * Create an ARP reply packet, encapsulated inside of an Ethernet frame.
+   * \param srcMac Source MAC address.
+   * \param srcIp Source IP address.
+   * \param dstMac Destination MAC address.
+   * \param dstIp Destination IP address.
+   * \return The ns3 Ptr<Packet> with the ARP reply.
+   */
+  Ptr<Packet> CreateArpReply (Mac48Address srcMac, Ipv4Address srcIp,
+                              Mac48Address dstMac, Ipv4Address dstIp);
+
+  /**
+   * Save the pair IP / MAC address in ARP table.
+   * \param ipAddr The IPv4 address.
+   * \param macAddr The MAC address.
+   */
+  void SaveArpEntry (Ipv4Address ipAddr, Mac48Address macAddr);
+
+  /**
+   * Perform an ARP resolution
+   * \param ip The Ipv4Address to search.
+   * \return The MAC address for this ip.
+   */
+  Mac48Address GetArpEntry (Ipv4Address ip);
+
   Ptr<SdnNetwork>     m_network;    //!< SDN network pointer.
+
+  /** Map saving <IPv4 address / MAC address> */
+  typedef std::map<Ipv4Address, Mac48Address> IpMacMap_t;
+  IpMacMap_t m_arpTable;          //!< ARP resolution table.
 };
 
 #endif /* SDN_CONTROLLER_H */

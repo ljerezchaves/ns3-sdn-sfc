@@ -26,12 +26,6 @@ NS_OBJECT_ENSURE_REGISTERED (SdnController);
 #define FLAGS_REMOVED_OVERLAP_RESET ((OFPFF_SEND_FLOW_REM | OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
 #define FLAGS_OVERLAP_RESET ((OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
 
-// Protocol numbers.
-#define ARP_PROTO_NUM (static_cast<uint16_t> (ArpL3Protocol::PROT_NUMBER))
-#define IPV4_PROT_NUM (static_cast<uint16_t> (Ipv4L3Protocol::PROT_NUMBER))
-#define UDP_PROT_NUM  (static_cast<uint16_t> (UdpL4Protocol::PROT_NUMBER))
-#define TCP_PROT_NUM  (static_cast<uint16_t> (TcpL4Protocol::PROT_NUMBER))
-
 SdnController::SdnController ()
   : m_network (0)
 {
@@ -75,7 +69,7 @@ SdnController::NotifyHostAttach (
   // Foward IP packets addressed to the host connected to this port.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=add,prio=1024,table=0"
-      << " eth_type="     << IPV4_PROT_NUM
+      << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
       << ",ip_dst="       << hostIpAddress
       << " apply:output=" << portNo;
   DpctlExecute (switchDev->GetDatapathId (), cmd.str ());
@@ -109,7 +103,7 @@ SdnController::HandlePacketIn (
       tlv = oxm_match_lookup (OXM_OF_ETH_TYPE, (struct ofl_match*)msg->match);
       memcpy (&ethType, tlv->value, OXM_LENGTH (OXM_OF_ETH_TYPE));
 
-      if (ethType == ARP_PROTO_NUM)
+      if (ethType == ArpL3Protocol::PROT_NUMBER)
         {
           // ARP packet
           return HandleArpPacketIn (msg, swtch, xid);

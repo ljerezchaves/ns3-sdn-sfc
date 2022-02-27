@@ -1,0 +1,91 @@
+/* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
+/*
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation;
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
+#ifndef VNF_APP_H
+#define VNF_APP_H
+
+#include <ns3/core-module.h>
+#include <ns3/network-module.h>
+#include <ns3/internet-module.h>
+
+namespace ns3 {
+
+/**
+ * This application implements an intermediate VNF.
+ */
+class VnfApp : public Application
+{
+public:
+  VnfApp ();            //!< Default constructor.
+  virtual ~VnfApp ();   //!< Dummy destructor, see DoDispose.
+
+  /**
+   * Get the type ID.
+   * \return the object TypeId.
+   */
+  static TypeId GetTypeId (void);
+
+  /**
+   * Set the next address.
+   * \param address The address.
+   */
+  void SetNextAddress (Address address);
+
+  /**
+   * Set the local RX port number.
+   * \param port The port number.
+   */
+  void SetLocalRxPort (uint16_t port);
+
+  /**
+   * Set the local TX port number.
+   * \param port The port number.
+   */
+  void SetLocalTxPort (uint16_t port);
+
+protected:
+  /** Destructor implementation */
+  virtual void DoDispose (void);
+
+private:
+  // Inherited from Application.
+  virtual void StartApplication (void);
+  virtual void StopApplication (void);
+
+  /**
+   * Handle a packet transmission.
+   * \param size The packet size.
+   */
+  void SendPacket (uint32_t size);
+
+  /**
+   * Handle a packet reception.
+   * \param socket Socket with data available to be read.
+   */
+  void ReadPacket (Ptr<Socket> socket);
+
+  Ptr<Socket>                 m_rxSocket;       //!< RX socket.
+  uint16_t                    m_rxPort;         //!< RX port.
+  Ptr<Socket>                 m_txSocket;       //!< TX socket.
+  uint16_t                    m_txPort;         //!< TX port.
+  Address                     m_nextAddress;    //!< Next VNF address.
+
+  double                      m_pktSizeScale;   //!< Packet size scaling factor.
+  EventId                     m_sendEvent;      //!< SendPacket event.
+};
+
+} // namespace ns3
+#endif /* VNF_APP_H */

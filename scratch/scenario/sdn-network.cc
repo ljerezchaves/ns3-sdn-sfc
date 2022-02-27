@@ -54,65 +54,196 @@ SdnNetwork::DoDispose ()
 }
 
 void
+SdnNetwork::EnablePcap (bool enable)
+{
+  NS_LOG_FUNCTION (this);
+
+  if (enable)
+    {
+      m_switchHelper->EnableOpenFlowPcap ("ofchannel", false);
+      m_csmaHelper.EnablePcap ("switch-port", m_csmaPortDevices, true);
+      m_csmaHelper.EnablePcap ("host", m_hostDevices, true);
+    }
+}
+
+void
 SdnNetwork::NotifyConstructionCompleted (void)
 {
   NS_LOG_FUNCTION (this);
 
-  // Configure IP address helper for hosts.
-  m_hostAddHelper.SetBase ("10.1.0.0", "255.255.0.0");
-
-  // Create the OFSwitch13 helper using P2P connections for OpenFlow channel.
-  m_switchHelper = CreateObjectWithAttributes<OFSwitch13InternalHelper> (
-      "ChannelType", EnumValue (OFSwitch13Helper::DEDICATEDP2P));
+  // Create the OFSwitch13 helper.
+  m_switchHelper = CreateObject<OFSwitch13InternalHelper> ();
 
   // Create the SDN controller.
+  m_controllerNode = CreateObject<Node> ();
+  Names::Add ("ctrl", m_controllerNode);
   m_controllerApp = CreateObject<SdnController> ();
+  m_controllerApp->SetSdnNetwork (Ptr<SdnNetwork> (this));
   m_switchHelper->InstallController (m_controllerNode, m_controllerApp);
 
   // Create the edge and core switches.
+  m_switchHelper->SetDeviceAttribute ("TcamDelay", TimeValue (MicroSeconds (20)));
   m_networkNodes.Create (3);
   m_networkDevices = m_switchHelper->InstallSwitch (m_networkNodes);
 
-  // Set pointer to nodes and devices.
-  Ptr<Node> coreSwitchNode1 = m_networkNodes.Get (0);
-  Ptr<Node> edgeSwitchNode1 = m_networkNodes.Get (1);
-  Ptr<Node> edgeSwitchNode2 = m_networkNodes.Get (2);
-  Ptr<OFSwitch13Device> coreSwitchDev1 = m_networkDevices.Get (0);
-  Ptr<OFSwitch13Device> edgeSwitchDev1 = m_networkDevices.Get (1);
-  Ptr<OFSwitch13Device> edgeSwitchDev2 = m_networkDevices.Get (2);
-
-  // TODO
-  // Create two links between each edge switch and the core switch.
-  // NetDeviceContainer csmaDevices;
-  // csmaDevices = m_csmaHelper.Install (coreSwitchNode1, edgeSwitchNode1);
-
   // Create the server switches
+  m_switchHelper->SetDeviceAttribute ("TcamDelay", TimeValue (MicroSeconds (0)));
   m_serverNodes.Create (4);
   m_serverDevices = m_switchHelper->InstallSwitch (m_serverNodes);
-
-  // Set pointer to nodes and devices.
-  Ptr<Node> coreServerNode1 = m_serverNodes.Get (0);
-  Ptr<Node> coreServerNode2 = m_serverNodes.Get (1);
-  Ptr<Node> edgeServerNode1 = m_serverNodes.Get (2);
-  Ptr<Node> edgeServerNode2 = m_serverNodes.Get (3);
-  Ptr<OFSwitch13Device> coreServerDev1 = m_serverDevices.Get (0);
-  Ptr<OFSwitch13Device> coreServerDev2 = m_serverDevices.Get (1);
-  Ptr<OFSwitch13Device> edgeServerDev1 = m_serverDevices.Get (2);
-  Ptr<OFSwitch13Device> edgeServerDev2 = m_serverDevices.Get (3);
-
-  // TODO
-  // Connect each server switch to the proper network switch.
 
   // Create the host nodes.
   m_hostNodes.Create (2);
 
+  // Set pointer to nodes and devices.
+  m_core1SwitchNode = m_networkNodes.Get (0);
+  m_edge1SwitchNode = m_networkNodes.Get (1);
+  m_edge2SwitchNode = m_networkNodes.Get (2);
+  Names::Add ("core", m_core1SwitchNode);
+  Names::Add ("edge1", m_edge1SwitchNode);
+  Names::Add ("edge2", m_edge2SwitchNode);
+  m_core1SwitchDevice = m_networkDevices.Get (0);
+  m_edge1SwitchDevice = m_networkDevices.Get (1);
+  m_edge2SwitchDevice = m_networkDevices.Get (2);
+
+  m_core1Server1Node = m_serverNodes.Get (0);
+  m_core1Server2Node = m_serverNodes.Get (1);
+  m_edge1Server1Node = m_serverNodes.Get (2);
+  m_edge2Server1Node = m_serverNodes.Get (3);
+  Names::Add ("server1(core)", m_core1Server1Node);
+  Names::Add ("server2(core)", m_core1Server2Node);
+  Names::Add ("server(edge1)", m_edge1Server1Node);
+  Names::Add ("server(edge2)", m_edge2Server1Node);
+  m_core1Server1Device = m_serverDevices.Get (0);
+  m_core1Server2Device = m_serverDevices.Get (1);
+  m_edge1Server1Device = m_serverDevices.Get (2);
+  m_edge2Server1Device = m_serverDevices.Get (3);
+
+  m_host1Node = m_hostNodes.Get (0);
+  m_host2Node = m_hostNodes.Get (1);
+  Names::Add ("h1", m_host1Node);
+  Names::Add ("h2", m_host2Node);
+
+  // Configure helper for CSMA connections;
+  m_csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492)); // Ethernet II - PPoE
+  NetDeviceContainer csmaDevices;
+
+  // ---------------------------------------------------------------------------
+  // Connect each edge switch to the core switch.
+  // TODO: Configure DataRate and delay for connections
+  m_csmaHelper.SetChannelAttribute ("DataRate", StringValue ("1Gbps"));
+  m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (0)));
+
+  // Core to edge 1 (link A)
+  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_edge1SwitchNode);
+  m_core1ToEdge1APort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge1ToCore1APort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Core to edge 1 (link B)
+  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_edge1SwitchNode);
+  m_core1ToEdge1BPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge1ToCore1BPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Core to edge 2 (link A)
+  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_edge2SwitchNode);
+  m_core1ToEdge2APort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge2ToCore1APort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Core to edge 2 (link B)
+  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_edge2SwitchNode);
+  m_core1ToEdge2BPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge2ToCore1BPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Edge 1 to edge 2
+  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_edge2SwitchNode);
+  m_edge1ToEdge2Port = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge2ToEdge1Port = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // ---------------------------------------------------------------------------
+  // Connect each server to the proper network switch (uplink and downlink)
+  // TODO: Configure DataRate and delay for connections
+  m_csmaHelper.SetChannelAttribute ("DataRate", StringValue ("1Gbps"));
+  m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (0)));
+
+  // Core to server 1 downlink.
+  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_core1Server1Node);
+  m_core1ToServer1DlinkPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToCore1DlinkPort = m_core1Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Core to server 1 uplink.
+  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_core1Server1Node);
+  m_core1ToServer1UlinkPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToCore1UlinkPort = m_core1Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Core to server 2 downlink.
+  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_core1Server2Node);
+  m_core1ToServer2DlinkPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server2ToCore1DlinkPort = m_core1Server2Device->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Core to server 2 uplink.
+  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_core1Server2Node);
+  m_core1ToServer2UlinkPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server2ToCore1UlinkPort = m_core1Server2Device->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Edge 1 to server downlink.
+  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_edge1Server1Node);
+  m_edge1ToServer1DlinkPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToEdge1DlinkPort = m_edge1Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Edge 1 to server uplink.
+  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_edge1Server1Node);
+  m_edge1ToServer1UlinkPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToEdge1UlinkPort = m_edge1Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Edge 2 to server downlink.
+  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_edge2Server1Node);
+  m_edge2ToServer1DlinkPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToEdge2DlinkPort = m_edge2Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // Edge 2 to server uplink.
+  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_edge2Server1Node);
+  m_edge2ToServer1UlinkPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToEdge2UlinkPort = m_edge2Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  m_csmaPortDevices.Add (csmaDevices);
+
+  // ---------------------------------------------------------------------------
+  // Connect each host to the proper network switch
+  // TODO: Configure DataRate and delay for connections
+  m_csmaHelper.SetChannelAttribute ("DataRate", StringValue ("1Gbps"));
+  m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (0)));
+
+  // Edge 1 to host index 0
+  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_hostNodes.Get (0));
+  m_edge1ToHost1Port = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_csmaPortDevices.Add (csmaDevices.Get (0));
+  m_hostDevices.Add (csmaDevices.Get (1));
+
+  // Edge 2 to host index 1
+  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_hostNodes.Get (1));
+  m_edge2ToHost1Port = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_csmaPortDevices.Add (csmaDevices.Get (0));
+  m_hostDevices.Add (csmaDevices.Get (1));
+
+  // ---------------------------------------------------------------------------
+
+  // Configure IP address in hosts.
   InternetStackHelper internetStackHelper;
   internetStackHelper.Install (m_hostNodes);
-
-
-  // TODO
-  // Connect each hosts to the edge switches.
-
+  m_hostAddrHelper.SetBase ("10.1.0.0", "255.255.0.0");
+  m_hostIfaces = m_hostAddrHelper.Assign (m_hostDevices);
+  m_host1Address = m_hostIfaces.GetAddress (0);
+  m_host2Address = m_hostIfaces.GetAddress (1);
 
   // Let's connect the OpenFlow switches to the controller. From this point
   // on it is not possible to change the OpenFlow network configuration.

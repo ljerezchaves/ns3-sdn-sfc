@@ -37,6 +37,7 @@ main (int argc, char *argv[])
   int   simTime  = 10;
   bool  verbose  = false;
   bool  libLog   = false;
+  bool  pcapLog  = false;
 
   // Parse the command line arguments and force default attributes.
   CommandLine cmd;
@@ -44,6 +45,7 @@ main (int argc, char *argv[])
   cmd.AddValue ("Progress", "Simulation progress interval (sec).", progress);
   cmd.AddValue ("SimTime",  "Simulation time (sec)", simTime);
   cmd.AddValue ("Verbose",  "Enable verbose output.", verbose);
+  cmd.AddValue ("Pcap",     "Enable PCAP output.", pcapLog);
   cmd.Parse (argc, argv);
   ForceDefaults ();
 
@@ -54,6 +56,7 @@ main (int argc, char *argv[])
 
   // Create the SDN network.
   Ptr<SdnNetwork> sdnNetwork = CreateObject<SdnNetwork> ();
+  sdnNetwork->EnablePcap (pcapLog);
 
   // Populate routing tables.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
@@ -156,4 +159,15 @@ void ForceDefaults (void)
   // OpenFlow virtual port devices.
   //
   Config::SetDefault ("ns3::VirtualNetDevice::Mtu", UintegerValue (3000));
+
+  //
+  // OpenFlow switches with a single flow table in the pipeline.
+  //
+  Config::SetDefault ("ns3::OFSwitch13Device::PipelineTables", UintegerValue (1));
+
+  //
+  // OpenFlow channel with dedicated P2P connections.
+  //
+  Config::SetDefault ("ns3::OFSwitch13Helper::ChannelType",
+                      EnumValue (OFSwitch13Helper::DEDICATEDP2P));
 }

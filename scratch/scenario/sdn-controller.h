@@ -21,6 +21,8 @@
 
 using namespace ns3;
 
+class SdnNetwork;
+
 /** The OpenFlow controller. */
 class SdnController : public OFSwitch13Controller
 {
@@ -34,6 +36,12 @@ public:
    */
   static TypeId GetTypeId (void);
 
+  /**
+   * Save the SDN network object.
+   * \param network The SDN network.
+   */
+  void SetSdnNetwork (Ptr<SdnNetwork> network);
+
 protected:
   /** Destructor implementation */
   virtual void DoDispose ();
@@ -43,6 +51,7 @@ protected:
   void HandshakeSuccessful (Ptr<const RemoteSwitch> swtch);
 
 private:
+  Ptr<SdnNetwork>     m_network;    //!< SDN network pointer.
 };
 
 #endif /* SDN_CONTROLLER_H */

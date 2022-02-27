@@ -15,11 +15,13 @@
  */
 
 #include "sdn-controller.h"
+#include "sdn-network.h"
 
 NS_LOG_COMPONENT_DEFINE ("SdnController");
 NS_OBJECT_ENSURE_REGISTERED (SdnController);
 
 SdnController::SdnController ()
+  : m_network (0)
 {
   NS_LOG_FUNCTION (this);
 }
@@ -40,10 +42,19 @@ SdnController::GetTypeId (void)
 }
 
 void
+SdnController::SetSdnNetwork (Ptr<SdnNetwork> network)
+{
+  NS_LOG_FUNCTION (this << network);
+
+  m_network = network;
+}
+
+void
 SdnController::DoDispose ()
 {
   NS_LOG_FUNCTION (this);
 
+  m_network = 0;
   OFSwitch13Controller::DoDispose ();
 }
 

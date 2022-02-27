@@ -35,6 +35,12 @@ public:
    */
   static TypeId GetTypeId (void);
 
+  /**
+   * Enable PCAP traces files on the OpenFlow network.
+   * \param enable True to enable the PCAP traces.
+   */
+  void EnablePcap (bool enable);
+
 protected:
   /** Destructor implementation. */
   virtual void DoDispose (void);
@@ -53,11 +59,63 @@ private:
   NodeContainer                 m_networkNodes;     //!< Switch network nodes.
   OFSwitch13DeviceContainer     m_serverDevices;    //!< Switch server devices.
   NodeContainer                 m_serverNodes;      //!< Switch server nodes.
+  NetDeviceContainer            m_csmaPortDevices;  //!< Switch CSMA port devices.
 
   NodeContainer                 m_hostNodes;        //!< Host nodes.
   NetDeviceContainer            m_hostDevices;      //!< Host devices.
+  Ipv4InterfaceContainer        m_hostIfaces;       //!< Host IP interfaces.
+  Ipv4AddressHelper             m_hostAddrHelper;   //!< Host address helper.
 
-  Ipv4AddressHelper             m_hostAddHelper;    //!< Host address helper.
+public:
+  Ptr<Node>                     m_core1SwitchNode;
+  Ptr<Node>                     m_edge1SwitchNode;
+  Ptr<Node>                     m_edge2SwitchNode;
+  Ptr<Node>                     m_core1Server1Node;
+  Ptr<Node>                     m_core1Server2Node;
+  Ptr<Node>                     m_edge1Server1Node;
+  Ptr<Node>                     m_edge2Server1Node;
+  Ptr<Node>                     m_host1Node;
+  Ptr<Node>                     m_host2Node;
+
+  Ipv4Address                   m_host1Address;
+  Ipv4Address                   m_host2Address;
+
+  Ptr<OFSwitch13Device>         m_core1SwitchDevice;
+  Ptr<OFSwitch13Device>         m_edge1SwitchDevice;
+  Ptr<OFSwitch13Device>         m_edge2SwitchDevice;
+  Ptr<OFSwitch13Device>         m_core1Server1Device;
+  Ptr<OFSwitch13Device>         m_core1Server2Device;
+  Ptr<OFSwitch13Device>         m_edge1Server1Device;
+  Ptr<OFSwitch13Device>         m_edge2Server1Device;
+
+  Ptr<OFSwitch13Port>           m_edge1ToHost1Port;
+  Ptr<OFSwitch13Port>           m_edge2ToHost1Port;
+  Ptr<OFSwitch13Port>           m_core1ToEdge1APort;
+  Ptr<OFSwitch13Port>           m_edge1ToCore1APort;
+  Ptr<OFSwitch13Port>           m_core1ToEdge2APort;
+  Ptr<OFSwitch13Port>           m_edge2ToCore1APort;
+  Ptr<OFSwitch13Port>           m_core1ToEdge1BPort;
+  Ptr<OFSwitch13Port>           m_edge1ToCore1BPort;
+  Ptr<OFSwitch13Port>           m_core1ToEdge2BPort;
+  Ptr<OFSwitch13Port>           m_edge2ToCore1BPort;
+  Ptr<OFSwitch13Port>           m_edge1ToEdge2Port;
+  Ptr<OFSwitch13Port>           m_edge2ToEdge1Port;
+  Ptr<OFSwitch13Port>           m_core1ToServer1UlinkPort;
+  Ptr<OFSwitch13Port>           m_core1ToServer1DlinkPort;
+  Ptr<OFSwitch13Port>           m_core1ToServer2UlinkPort;
+  Ptr<OFSwitch13Port>           m_core1ToServer2DlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToCore1UlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToCore1DlinkPort;
+  Ptr<OFSwitch13Port>           m_server2ToCore1UlinkPort;
+  Ptr<OFSwitch13Port>           m_server2ToCore1DlinkPort;
+  Ptr<OFSwitch13Port>           m_edge1ToServer1UlinkPort;
+  Ptr<OFSwitch13Port>           m_edge1ToServer1DlinkPort;
+  Ptr<OFSwitch13Port>           m_edge2ToServer1UlinkPort;
+  Ptr<OFSwitch13Port>           m_edge2ToServer1DlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToEdge1UlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToEdge1DlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToEdge2UlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToEdge2DlinkPort;
 };
 
 #endif /* SDN_NETWORK_H */

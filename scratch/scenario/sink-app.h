@@ -12,12 +12,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * Author: Luciano Jerez Chaves <ljerezchaves@gmail.com>
  */
 
-#ifndef VNF_FIRST_APP_H
-#define VNF_FIRST_APP_H
+#ifndef SINK_APP_H
+#define SINK_APP_H
 
 #include <ns3/core-module.h>
 #include <ns3/network-module.h>
@@ -26,13 +24,13 @@
 namespace ns3 {
 
 /**
- * This application implements the traffic source for a VNF chain.
+ * This application implements the traffic sink for a VNF chain.
  */
-class VnfFirstApp : public Application
+class SinkApp : public Application
 {
 public:
-  VnfFirstApp ();            //!< Default constructor.
-  virtual ~VnfFirstApp ();   //!< Dummy destructor, see DoDispose.
+  SinkApp ();            //!< Default constructor.
+  virtual ~SinkApp ();   //!< Dummy destructor, see DoDispose.
 
   /**
    * Get the type ID.
@@ -41,16 +39,10 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the next address.
-   * \param address The address.
-   */
-  void SetNextAddress (Address address);
-
-  /**
-   * Set the local TX port number.
+   * Set the local RX port number.
    * \param port The port number.
    */
-  void SetLocalTxPort (uint16_t port);
+  void SetLocalRxPort (uint16_t port);
 
 protected:
   /** Destructor implementation */
@@ -62,19 +54,14 @@ private:
   virtual void StopApplication (void);
 
   /**
-   * Handle a packet transmission.
-   * \param size The packet size.
+   * Handle a packet reception.
+   * \param socket Socket with data available to be read.
    */
-  void SendPacket (uint32_t size);
+  void ReadPacket (Ptr<Socket> socket);
 
   Ptr<Socket>                 m_socket;         //!< Local socket.
   uint16_t                    m_port;           //!< Local port.
-  Address                     m_nextAddress;    //!< Next VNF address.
-
-  Ptr<RandomVariableStream>   m_pktInterRng;    //!< Packet inter-arrival time.
-  Ptr<RandomVariableStream>   m_pktSizeRng;     //!< Packet size.
-  EventId                     m_sendEvent;      //!< SendPacket event.
 };
 
 } // namespace ns3
-#endif /* VNF_FIRST_APP_H */
+#endif /* SINK_APP_H */

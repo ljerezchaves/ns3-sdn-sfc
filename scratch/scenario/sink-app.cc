@@ -12,45 +12,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * Author: Luciano Jerez Chaves <ljerezchaves@gmail.com>
  */
 
-#include "vnf-last-app.h"
+#include "sink-app.h"
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE ("VnfLastApp");
-NS_OBJECT_ENSURE_REGISTERED (VnfLastApp);
+NS_LOG_COMPONENT_DEFINE ("SinkApp");
+NS_OBJECT_ENSURE_REGISTERED (SinkApp);
 
-VnfLastApp::VnfLastApp ()
+SinkApp::SinkApp ()
   : m_socket (0)
 {
   NS_LOG_FUNCTION (this);
 }
 
-VnfLastApp::~VnfLastApp ()
+SinkApp::~SinkApp ()
 {
   NS_LOG_FUNCTION (this);
 }
 
 TypeId
-VnfLastApp::GetTypeId (void)
+SinkApp::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::VnfLastApp")
+  static TypeId tid = TypeId ("ns3::SinkApp")
     .SetParent<Application> ()
-    .AddConstructor<VnfLastApp> ()
+    .AddConstructor<SinkApp> ()
 
     .AddAttribute ("Port", "Local port.",
                    UintegerValue (10000),
-                   MakeUintegerAccessor (&VnfLastApp::m_port),
+                   MakeUintegerAccessor (&SinkApp::m_port),
                    MakeUintegerChecker<uint16_t> ())
   ;
   return tid;
 }
 
 void
-VnfLastApp::SetLocalRxPort (uint16_t port)
+SinkApp::SetLocalRxPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 
@@ -58,7 +56,7 @@ VnfLastApp::SetLocalRxPort (uint16_t port)
 }
 
 void
-VnfLastApp::DoDispose (void)
+SinkApp::DoDispose (void)
 {
   NS_LOG_FUNCTION (this);
 
@@ -67,7 +65,7 @@ VnfLastApp::DoDispose (void)
 }
 
 void
-VnfLastApp::StartApplication (void)
+SinkApp::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
 
@@ -75,11 +73,11 @@ VnfLastApp::StartApplication (void)
   TypeId udpFactory = TypeId::LookupByName ("ns3::UdpSocketFactory");
   m_socket = Socket::CreateSocket (GetNode (), udpFactory);
   m_socket->Bind (InetSocketAddress (Ipv4Address::GetAny (), m_port));
-  m_socket->SetRecvCallback (MakeCallback (&VnfLastApp::ReadPacket, this));
+  m_socket->SetRecvCallback (MakeCallback (&SinkApp::ReadPacket, this));
 }
 
 void
-VnfLastApp::StopApplication ()
+SinkApp::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
 
@@ -92,12 +90,12 @@ VnfLastApp::StopApplication ()
 }
 
 void
-VnfLastApp::ReadPacket (Ptr<Socket> socket)
+SinkApp::ReadPacket (Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION (this << socket);
 
   Ptr<Packet> packet = socket->Recv ();
-  NS_LOG_DEBUG ("Last VNF RX packet with " << packet->GetSize () << " bytes.");
+  NS_LOG_DEBUG ("Sink app received a packet with " << packet->GetSize () << " bytes.");
 }
 
 } // namespace ns3

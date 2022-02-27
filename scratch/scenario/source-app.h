@@ -14,8 +14,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef VNF_LAST_APP_H
-#define VNF_LAST_APP_H
+#ifndef SOURCE_APP_H
+#define SOURCE_APP_H
 
 #include <ns3/core-module.h>
 #include <ns3/network-module.h>
@@ -24,13 +24,13 @@
 namespace ns3 {
 
 /**
- * This application implements the traffic sink for a VNF chain.
+ * This application implements the traffic source for a VNF chain.
  */
-class VnfLastApp : public Application
+class SourceApp : public Application
 {
 public:
-  VnfLastApp ();            //!< Default constructor.
-  virtual ~VnfLastApp ();   //!< Dummy destructor, see DoDispose.
+  SourceApp ();            //!< Default constructor.
+  virtual ~SourceApp ();   //!< Dummy destructor, see DoDispose.
 
   /**
    * Get the type ID.
@@ -39,10 +39,16 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the local RX port number.
+   * Set the next address.
+   * \param address The address.
+   */
+  void SetNextAddress (Address address);
+
+  /**
+   * Set the local TX port number.
    * \param port The port number.
    */
-  void SetLocalRxPort (uint16_t port);
+  void SetLocalTxPort (uint16_t port);
 
 protected:
   /** Destructor implementation */
@@ -54,14 +60,19 @@ private:
   virtual void StopApplication (void);
 
   /**
-   * Handle a packet reception.
-   * \param socket Socket with data available to be read.
+   * Handle a packet transmission.
+   * \param size The packet size.
    */
-  void ReadPacket (Ptr<Socket> socket);
+  void SendPacket (uint32_t size);
 
   Ptr<Socket>                 m_socket;         //!< Local socket.
   uint16_t                    m_port;           //!< Local port.
+  Address                     m_nextAddress;    //!< Next VNF address.
+
+  Ptr<RandomVariableStream>   m_pktInterRng;    //!< Packet inter-arrival time.
+  Ptr<RandomVariableStream>   m_pktSizeRng;     //!< Packet size.
+  EventId                     m_sendEvent;      //!< SendPacket event.
 };
 
 } // namespace ns3
-#endif /* VNF_LAST_APP_H */
+#endif /* SOURCE_APP_H */

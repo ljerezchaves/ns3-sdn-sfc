@@ -12,62 +12,60 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * Author: Luciano Jerez Chaves <ljerezchaves@gmail.com>
  */
 
-#include "vnf-first-app.h"
+#include "source-app.h"
 
 namespace ns3 {
 
-NS_LOG_COMPONENT_DEFINE ("VnfFirstApp");
-NS_OBJECT_ENSURE_REGISTERED (VnfFirstApp);
+NS_LOG_COMPONENT_DEFINE ("SourceApp");
+NS_OBJECT_ENSURE_REGISTERED (SourceApp);
 
-VnfFirstApp::VnfFirstApp ()
+SourceApp::SourceApp ()
   : m_socket (0),
   m_sendEvent (EventId ())
 {
   NS_LOG_FUNCTION (this);
 }
 
-VnfFirstApp::~VnfFirstApp ()
+SourceApp::~SourceApp ()
 {
   NS_LOG_FUNCTION (this);
 }
 
 TypeId
-VnfFirstApp::GetTypeId (void)
+SourceApp::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::VnfFirstApp")
+  static TypeId tid = TypeId ("ns3::SourceApp")
     .SetParent<Application> ()
-    .AddConstructor<VnfFirstApp> ()
+    .AddConstructor<SourceApp> ()
 
-    .AddAttribute ("NextAddress", "The next VMF address.",
+    .AddAttribute ("NextAddress", "The next VNF address.",
                    AddressValue (),
-                   MakeAddressAccessor (&VnfFirstApp::m_nextAddress),
+                   MakeAddressAccessor (&SourceApp::m_nextAddress),
                    MakeAddressChecker ())
     .AddAttribute ("Port", "Local port.",
                    UintegerValue (10000),
-                   MakeUintegerAccessor (&VnfFirstApp::m_port),
+                   MakeUintegerAccessor (&SourceApp::m_port),
                    MakeUintegerChecker<uint16_t> ())
 
     // These attributes must be configured for the desired traffic pattern.
     .AddAttribute ("PktInterval",
                    "A random variable for the packet inter-arrival time [s].",
                    StringValue ("ns3::ConstantRandomVariable[Constant=1]"),
-                   MakePointerAccessor (&VnfFirstApp::m_pktInterRng),
+                   MakePointerAccessor (&SourceApp::m_pktInterRng),
                    MakePointerChecker <RandomVariableStream> ())
     .AddAttribute ("PktSize",
                    "A random variable for the packet size [bytes].",
                    StringValue ("ns3::ConstantRandomVariable[Constant=100]"),
-                   MakePointerAccessor (&VnfFirstApp::m_pktSizeRng),
+                   MakePointerAccessor (&SourceApp::m_pktSizeRng),
                    MakePointerChecker <RandomVariableStream> ())
   ;
   return tid;
 }
 
 void
-VnfFirstApp::SetNextAddress (Address address)
+SourceApp::SetNextAddress (Address address)
 {
   NS_LOG_FUNCTION (this << address);
 
@@ -75,7 +73,7 @@ VnfFirstApp::SetNextAddress (Address address)
 }
 
 void
-VnfFirstApp::SetLocalTxPort (uint16_t port)
+SourceApp::SetLocalTxPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 
@@ -83,7 +81,7 @@ VnfFirstApp::SetLocalTxPort (uint16_t port)
 }
 
 void
-VnfFirstApp::DoDispose (void)
+SourceApp::DoDispose (void)
 {
   NS_LOG_FUNCTION (this);
 
@@ -92,7 +90,7 @@ VnfFirstApp::DoDispose (void)
 }
 
 void
-VnfFirstApp::StartApplication (void)
+SourceApp::StartApplication (void)
 {
   NS_LOG_FUNCTION (this);
 
@@ -107,11 +105,11 @@ VnfFirstApp::StartApplication (void)
   m_sendEvent.Cancel ();
   Time sendTime = Seconds (std::abs (m_pktInterRng->GetValue ()));
   uint32_t newSize = m_pktSizeRng->GetInteger ();
-  m_sendEvent = Simulator::Schedule (sendTime, &VnfFirstApp::SendPacket, this, newSize);
+  m_sendEvent = Simulator::Schedule (sendTime, &SourceApp::SendPacket, this, newSize);
 }
 
 void
-VnfFirstApp::StopApplication ()
+SourceApp::StopApplication ()
 {
   NS_LOG_FUNCTION (this);
 
@@ -127,7 +125,7 @@ VnfFirstApp::StopApplication ()
 }
 
 void
-VnfFirstApp::SendPacket (uint32_t size)
+SourceApp::SendPacket (uint32_t size)
 {
   NS_LOG_FUNCTION (this << size);
 
@@ -135,17 +133,17 @@ VnfFirstApp::SendPacket (uint32_t size)
   int bytes = m_socket->Send (packet);
   if (bytes == static_cast<int> (packet->GetSize ()))
     {
-      NS_LOG_DEBUG ("First VNF TX packet with " << bytes << " bytes.");
+      NS_LOG_DEBUG ("Source app transmitted a packet with " << bytes << " bytes.");
     }
   else
     {
-      NS_LOG_ERROR ("First VNF TX error.");
+      NS_LOG_ERROR ("Transmission error in source app.");
     }
 
   // Schedule the next packet transmission.
   Time sendTime = Seconds (std::abs (m_pktInterRng->GetValue ()));
   uint32_t newSize = m_pktSizeRng->GetInteger ();
-  m_sendEvent = Simulator::Schedule (sendTime, &VnfFirstApp::SendPacket, this, newSize);
+  m_sendEvent = Simulator::Schedule (sendTime, &SourceApp::SendPacket, this, newSize);
 }
 
 } // namespace ns3

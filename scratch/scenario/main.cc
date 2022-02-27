@@ -75,7 +75,7 @@ EnableLibLog (bool enable)
 {
   if (enable)
     {
-      ofs::EnableLibraryLog (true, "ofswitch13-library");
+      ofs::EnableLibraryLog (true);
     }
 }
 

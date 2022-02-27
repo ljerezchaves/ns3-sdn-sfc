@@ -50,21 +50,9 @@ protected:
 
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.
-  Ptr<Node>                     m_controllerNode;   //!< Controller node.
-
-  CsmaHelper                    m_csmaHelper;       //!< Connection helper.
   Ptr<OFSwitch13InternalHelper> m_switchHelper;     //!< Switch helper.
-
-  OFSwitch13DeviceContainer     m_networkDevices;   //!< Switch network devices.
-  NodeContainer                 m_networkNodes;     //!< Switch network nodes.
-  OFSwitch13DeviceContainer     m_serverDevices;    //!< Switch server devices.
-  NodeContainer                 m_serverNodes;      //!< Switch server nodes.
-  NetDeviceContainer            m_csmaPortDevices;  //!< Switch CSMA port devices.
-
-  NodeContainer                 m_hostNodes;        //!< Host nodes.
+  NetDeviceContainer            m_csmaPortDevices;  //!< Switch port devices.
   NetDeviceContainer            m_hostDevices;      //!< Host devices.
-  Ipv4InterfaceContainer        m_hostIfaces;       //!< Host IP interfaces.
-  Ipv4AddressHelper             m_hostAddrHelper;   //!< Host address helper.
 
 public:
   Ptr<Node>                     m_coreSwitchNode;

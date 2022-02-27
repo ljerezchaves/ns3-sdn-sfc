@@ -76,9 +76,15 @@ public:
   Ptr<Node>                     m_edge2Server1Node;
   Ptr<Node>                     m_host1Node;
   Ptr<Node>                     m_host2Node;
+  Ptr<Node>                     m_host3Node;
 
   Ipv4Address                   m_host1Address;
   Ipv4Address                   m_host2Address;
+  Ipv4Address                   m_host3Address;
+
+  Ptr<NetDevice>                m_host1Device;
+  Ptr<NetDevice>                m_host2Device;
+  Ptr<NetDevice>                m_host3Device;
 
   Ptr<OFSwitch13Device>         m_core1SwitchDevice;
   Ptr<OFSwitch13Device>         m_edge1SwitchDevice;
@@ -88,8 +94,9 @@ public:
   Ptr<OFSwitch13Device>         m_edge1Server1Device;
   Ptr<OFSwitch13Device>         m_edge2Server1Device;
 
-  Ptr<OFSwitch13Port>           m_edge1ToHost1Port;
-  Ptr<OFSwitch13Port>           m_edge2ToHost1Port;
+  Ptr<OFSwitch13Port>           m_core1ToHostPort;
+  Ptr<OFSwitch13Port>           m_edge1ToHostPort;
+  Ptr<OFSwitch13Port>           m_edge2ToHostPort;
   Ptr<OFSwitch13Port>           m_core1ToEdge1APort;
   Ptr<OFSwitch13Port>           m_edge1ToCore1APort;
   Ptr<OFSwitch13Port>           m_core1ToEdge2APort;

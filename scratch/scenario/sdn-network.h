@@ -42,11 +42,6 @@ protected:
   // Inherited from ObjectBase.
   virtual void NotifyConstructionCompleted (void);
 
-  /**
-   * Create the controller application and switch devices for the SDN network.
-   */
-  virtual void CreateTopology (void);
-
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.
   Ptr<Node>                     m_controllerNode;   //!< Controller node.
@@ -63,7 +58,6 @@ private:
   NetDeviceContainer            m_hostDevices;      //!< Host devices.
 
   Ipv4AddressHelper             m_hostAddHelper;    //!< Host address helper.
-
 };
 
 #endif /* SDN_NETWORK_H */

@@ -95,35 +95,35 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_hostNodes.Create (3);
 
   // Set pointer to nodes and devices.
-  m_core1SwitchNode = m_networkNodes.Get (0);
+  m_coreSwitchNode = m_networkNodes.Get (0);
   m_edge1SwitchNode = m_networkNodes.Get (1);
   m_edge2SwitchNode = m_networkNodes.Get (2);
-  Names::Add ("core", m_core1SwitchNode);
+  Names::Add ("core", m_coreSwitchNode);
   Names::Add ("edge1", m_edge1SwitchNode);
   Names::Add ("edge2", m_edge2SwitchNode);
-  m_core1SwitchDevice = m_networkDevices.Get (0);
+  m_coreSwitchDevice = m_networkDevices.Get (0);
   m_edge1SwitchDevice = m_networkDevices.Get (1);
   m_edge2SwitchDevice = m_networkDevices.Get (2);
 
-  m_core1Server1Node = m_serverNodes.Get (0);
-  m_core1Server2Node = m_serverNodes.Get (1);
-  m_edge1Server1Node = m_serverNodes.Get (2);
-  m_edge2Server1Node = m_serverNodes.Get (3);
-  Names::Add ("server1(core)", m_core1Server1Node);
-  Names::Add ("server2(core)", m_core1Server2Node);
-  Names::Add ("server(edge1)", m_edge1Server1Node);
-  Names::Add ("server(edge2)", m_edge2Server1Node);
-  m_core1Server1Device = m_serverDevices.Get (0);
-  m_core1Server2Device = m_serverDevices.Get (1);
-  m_edge1Server1Device = m_serverDevices.Get (2);
-  m_edge2Server1Device = m_serverDevices.Get (3);
+  m_coreServer1Node = m_serverNodes.Get (0);
+  m_coreServer2Node = m_serverNodes.Get (1);
+  m_edge1ServerNode = m_serverNodes.Get (2);
+  m_edge2ServerNode = m_serverNodes.Get (3);
+  Names::Add ("server1(core)", m_coreServer1Node);
+  Names::Add ("server2(core)", m_coreServer2Node);
+  Names::Add ("server(edge1)", m_edge1ServerNode);
+  Names::Add ("server(edge2)", m_edge2ServerNode);
+  m_coreServer1Device = m_serverDevices.Get (0);
+  m_coreServer2Device = m_serverDevices.Get (1);
+  m_edge1ServerDevice = m_serverDevices.Get (2);
+  m_edge2ServerDevice = m_serverDevices.Get (3);
 
-  m_host1Node = m_hostNodes.Get (0);
-  m_host2Node = m_hostNodes.Get (1);
-  m_host3Node = m_hostNodes.Get (2);
-  Names::Add ("h1", m_host1Node);
-  Names::Add ("h2", m_host2Node);
-  Names::Add ("h3", m_host3Node);
+  m_coreHostNode = m_hostNodes.Get (0);
+  m_edge1HostNode = m_hostNodes.Get (1);
+  m_edge2HostNode = m_hostNodes.Get (2);
+  Names::Add ("host(core)", m_coreHostNode);
+  Names::Add ("host(edge1)", m_edge1HostNode);
+  Names::Add ("host(edge2)", m_edge2HostNode);
 
   // Configure helper for CSMA connections;
   m_csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492)); // Ethernet II - PPoE
@@ -136,27 +136,27 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (0)));
 
   // Core to edge 1 (link A)
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_edge1SwitchNode);
-  m_core1ToEdge1APort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_edge1ToCore1APort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_edge1SwitchNode);
+  m_coreToEdge1APort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge1ToCoreAPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Core to edge 1 (link B)
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_edge1SwitchNode);
-  m_core1ToEdge1BPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_edge1ToCore1BPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_edge1SwitchNode);
+  m_coreToEdge1BPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge1ToCoreBPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Core to edge 2 (link A)
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_edge2SwitchNode);
-  m_core1ToEdge2APort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_edge2ToCore1APort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_edge2SwitchNode);
+  m_coreToEdge2APort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge2ToCoreAPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Core to edge 2 (link B)
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_edge2SwitchNode);
-  m_core1ToEdge2BPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_edge2ToCore1BPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_edge2SwitchNode);
+  m_coreToEdge2BPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_edge2ToCoreBPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Edge 1 to edge 2
@@ -172,51 +172,51 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (0)));
 
   // Core to server 1 downlink.
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_core1Server1Node);
-  m_core1ToServer1DlinkPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_server1ToCore1DlinkPort = m_core1Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_coreServer1Node);
+  m_coreToServer1DlinkPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToCoreDlinkPort = m_coreServer1Device->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Core to server 1 uplink.
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_core1Server1Node);
-  m_core1ToServer1UlinkPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_server1ToCore1UlinkPort = m_core1Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_coreServer1Node);
+  m_coreToServer1UlinkPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToCoreUlinkPort = m_coreServer1Device->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Core to server 2 downlink.
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_core1Server2Node);
-  m_core1ToServer2DlinkPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_server2ToCore1DlinkPort = m_core1Server2Device->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_coreServer2Node);
+  m_coreToServer2DlinkPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server2ToCoreDlinkPort = m_coreServer2Device->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Core to server 2 uplink.
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_core1Server2Node);
-  m_core1ToServer2UlinkPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_server2ToCore1UlinkPort = m_core1Server2Device->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_coreServer2Node);
+  m_coreToServer2UlinkPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server2ToCoreUlinkPort = m_coreServer2Device->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Edge 1 to server downlink.
-  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_edge1Server1Node);
-  m_edge1ToServer1DlinkPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_server1ToEdge1DlinkPort = m_edge1Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_edge1ServerNode);
+  m_edge1ToServerDlinkPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_serverToEdge1DlinkPort = m_edge1ServerDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Edge 1 to server uplink.
-  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_edge1Server1Node);
-  m_edge1ToServer1UlinkPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_server1ToEdge1UlinkPort = m_edge1Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_edge1ServerNode);
+  m_edge1ToServerUlinkPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_serverToEdge1UlinkPort = m_edge1ServerDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Edge 2 to server downlink.
-  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_edge2Server1Node);
-  m_edge2ToServer1DlinkPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_server1ToEdge2DlinkPort = m_edge2Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_edge2ServerNode);
+  m_edge2ToServerDlinkPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_serverToEdge2DlinkPort = m_edge2ServerDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // Edge 2 to server uplink.
-  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_edge2Server1Node);
-  m_edge2ToServer1UlinkPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_server1ToEdge2UlinkPort = m_edge2Server1Device->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_edge2ServerNode);
+  m_edge2ToServerUlinkPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_serverToEdge2UlinkPort = m_edge2ServerDevice->AddSwitchPort (csmaDevices.Get (1));
   m_csmaPortDevices.Add (csmaDevices);
 
   // ---------------------------------------------------------------------------
@@ -225,26 +225,26 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_csmaHelper.SetChannelAttribute ("DataRate", StringValue ("1Gbps"));
   m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (0)));
 
-  // Edge 1 to host 1
-  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_host1Node);
+  // Edge 1 to host
+  csmaDevices = m_csmaHelper.Install (m_edge1SwitchNode, m_edge1HostNode);
   m_edge1ToHostPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
   m_csmaPortDevices.Add (csmaDevices.Get (0));
-  m_hostDevices.Add (csmaDevices.Get (1));
-  m_host1Device = csmaDevices.Get (1);
+  m_edge1HostDevice = csmaDevices.Get (1);
+  m_hostDevices.Add (m_edge1HostDevice);
 
-  // Edge 2 to host 2
-  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_host2Node);
+  // Edge 2 to host
+  csmaDevices = m_csmaHelper.Install (m_edge2SwitchNode, m_edge2HostNode);
   m_edge2ToHostPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
   m_csmaPortDevices.Add (csmaDevices.Get (0));
-  m_hostDevices.Add (csmaDevices.Get (1));
-  m_host2Device = csmaDevices.Get (1);
+  m_edge2HostDevice = csmaDevices.Get (1);
+  m_hostDevices.Add (m_edge2HostDevice);
 
-  // Core to host 3
-  csmaDevices = m_csmaHelper.Install (m_core1SwitchNode, m_host3Node);
-  m_core1ToHostPort = m_core1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+  // Core to host
+  csmaDevices = m_csmaHelper.Install (m_coreSwitchNode, m_coreHostNode);
+  m_coreToHostPort = m_coreSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
   m_csmaPortDevices.Add (csmaDevices.Get (0));
-  m_hostDevices.Add (csmaDevices.Get (1));
-  m_host3Device = csmaDevices.Get (1);
+  m_coreHostDevice = csmaDevices.Get (1);
+  m_hostDevices.Add (m_coreHostDevice);
 
   // ---------------------------------------------------------------------------
 
@@ -253,17 +253,17 @@ SdnNetwork::NotifyConstructionCompleted (void)
   internetStackHelper.Install (m_hostNodes);
   m_hostAddrHelper.SetBase ("10.1.0.0", "255.255.0.0");
   m_hostIfaces = m_hostAddrHelper.Assign (m_hostDevices);
-  m_host1Address = m_hostIfaces.GetAddress (0);
-  m_host2Address = m_hostIfaces.GetAddress (1);
-  m_host3Address = m_hostIfaces.GetAddress (2);
+  m_edge1HostAddress = m_hostIfaces.GetAddress (0);
+  m_edge2HostAddress = m_hostIfaces.GetAddress (1);
+  m_coreHostAddress = m_hostIfaces.GetAddress (2);
 
   // Notify the controller about the host nodes.
   m_controllerApp->NotifyHostAttach (
-    m_edge1SwitchDevice, m_edge1ToHostPort->GetPortNo (), m_host1Device);
+    m_edge1SwitchDevice, m_edge1ToHostPort->GetPortNo (), m_edge1HostDevice);
   m_controllerApp->NotifyHostAttach (
-    m_edge2SwitchDevice, m_edge2ToHostPort->GetPortNo (), m_host2Device);
+    m_edge2SwitchDevice, m_edge2ToHostPort->GetPortNo (), m_edge2HostDevice);
   m_controllerApp->NotifyHostAttach (
-    m_core1SwitchDevice, m_core1ToHostPort->GetPortNo (), m_host3Device);
+    m_coreSwitchDevice, m_coreToHostPort->GetPortNo (), m_coreHostDevice);
 
   // Let's connect the OpenFlow switches to the controller. From this point
   // on it is not possible to change the OpenFlow network configuration.

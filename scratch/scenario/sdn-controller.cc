@@ -22,6 +22,16 @@
 NS_LOG_COMPONENT_DEFINE ("SdnController");
 NS_OBJECT_ENSURE_REGISTERED (SdnController);
 
+// OpenFlow flow-mod flags.
+#define FLAGS_REMOVED_OVERLAP_RESET ((OFPFF_SEND_FLOW_REM | OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
+#define FLAGS_OVERLAP_RESET ((OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
+
+// Protocol numbers.
+#define ARP_PROTO_NUM (static_cast<uint16_t> (ArpL3Protocol::PROT_NUMBER))
+#define IPV4_PROT_NUM (static_cast<uint16_t> (Ipv4L3Protocol::PROT_NUMBER))
+#define UDP_PROT_NUM  (static_cast<uint16_t> (UdpL4Protocol::PROT_NUMBER))
+#define TCP_PROT_NUM  (static_cast<uint16_t> (TcpL4Protocol::PROT_NUMBER))
+
 SdnController::SdnController ()
   : m_network (0)
 {
@@ -52,6 +62,26 @@ SdnController::SetSdnNetwork (Ptr<SdnNetwork> network)
 }
 
 void
+SdnController::NotifyHostAttach (
+  Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev)
+{
+  NS_LOG_FUNCTION (this << switchDev << portNo << hostDev);
+
+  // Save addresses for further ARP resolution.
+  Ipv4Address hostIpAddress = Ipv4AddressHelper::GetAddress (hostDev);
+  Mac48Address hostMacAddress = Mac48Address::ConvertFrom (hostDev->GetAddress ());
+  SaveArpEntry (hostIpAddress, hostMacAddress);
+
+  // Foward IP packets addressed to the host connected to this port.
+  std::ostringstream cmd;
+  cmd << "flow-mod cmd=add,prio=1024,table=0"
+      << " eth_type="     << IPV4_PROT_NUM
+      << ",ip_dst="       << hostIpAddress
+      << " apply:output=" << portNo;
+  DpctlExecute (switchDev->GetDatapathId (), cmd.str ());
+}
+
+void
 SdnController::DoDispose ()
 {
   NS_LOG_FUNCTION (this);
@@ -71,6 +101,21 @@ SdnController::HandlePacketIn (
   NS_LOG_DEBUG ("Packet in match: " << msgStr);
   free (msgStr);
 
+  if (msg->reason == OFPR_ACTION)
+    {
+      // Get Ethernet frame type
+      uint16_t ethType;
+      struct ofl_match_tlv *tlv;
+      tlv = oxm_match_lookup (OXM_OF_ETH_TYPE, (struct ofl_match*)msg->match);
+      memcpy (&ethType, tlv->value, OXM_LENGTH (OXM_OF_ETH_TYPE));
+
+      if (ethType == ARP_PROTO_NUM)
+        {
+          // ARP packet
+          return HandleArpPacketIn (msg, swtch, xid);
+        }
+    }
+
   // All handlers must free the message when everything is ok
   ofl_msg_free ((struct ofl_msg_header*)msg, 0);
   return 0;
@@ -80,6 +125,83 @@ void
 SdnController::HandshakeSuccessful (Ptr<const RemoteSwitch> swtch)
 {
   NS_LOG_FUNCTION (this << swtch);
+
+  // Get the switch datapath ID
+  uint64_t swDpId = swtch->GetDpId ();
+
+  // For packet-in messages, send only the first 128 bytes to the controller
+  DpctlExecute (swDpId, "set-config miss=128");
+
+  // Send ARP requests to the controller
+  DpctlExecute (swDpId, "flow-mod cmd=add,table=0,prio=20 "
+                "eth_type=0x0806,arp_op=1 apply:output=ctrl");
+}
+
+ofl_err
+SdnController::HandleArpPacketIn (
+  struct ofl_msg_packet_in *msg, Ptr<const RemoteSwitch> swtch, uint32_t xid)
+{
+  NS_LOG_FUNCTION (this << swtch << xid);
+
+  struct ofl_match_tlv *tlv;
+
+  // Get ARP operation
+  uint16_t arpOp;
+  tlv = oxm_match_lookup (OXM_OF_ARP_OP, (struct ofl_match*)msg->match);
+  memcpy (&arpOp, tlv->value, OXM_LENGTH (OXM_OF_ARP_OP));
+
+  // Get input port
+  uint32_t inPort;
+  tlv = oxm_match_lookup (OXM_OF_IN_PORT, (struct ofl_match*)msg->match);
+  memcpy (&inPort, tlv->value, OXM_LENGTH (OXM_OF_IN_PORT));
+
+  // Get source and target IP address
+  Ipv4Address srcIp, dstIp;
+  srcIp = ExtractIpv4Address (OXM_OF_ARP_SPA, (struct ofl_match*)msg->match);
+  dstIp = ExtractIpv4Address (OXM_OF_ARP_TPA, (struct ofl_match*)msg->match);
+
+  // Get Source MAC address
+  Mac48Address srcMac, dstMac;
+  tlv = oxm_match_lookup (OXM_OF_ARP_SHA, (struct ofl_match*)msg->match);
+  srcMac.CopyFrom (tlv->value);
+  tlv = oxm_match_lookup (OXM_OF_ARP_THA, (struct ofl_match*)msg->match);
+  dstMac.CopyFrom (tlv->value);
+
+  // Check for ARP request
+  if (arpOp == ArpHeader::ARP_TYPE_REQUEST)
+    {
+      uint8_t replyData[64];
+
+      // Check for existing IP information
+      Mac48Address replyMac = GetArpEntry (dstIp);
+      Ptr<Packet> pkt = CreateArpReply (replyMac, dstIp, srcMac, srcIp);
+      NS_ASSERT_MSG (pkt->GetSize () == 64, "Invalid packet size.");
+      pkt->CopyData (replyData, 64);
+
+      // Send the ARP replay back to the input port
+      struct ofl_action_output *action =
+        (struct ofl_action_output*)xmalloc (sizeof (struct ofl_action_output));
+      action->header.type = OFPAT_OUTPUT;
+      action->port = OFPP_IN_PORT;
+      action->max_len = 0;
+
+      // Send the ARP reply within an OpenFlow PacketOut message
+      struct ofl_msg_packet_out reply;
+      reply.header.type = OFPT_PACKET_OUT;
+      reply.buffer_id = OFP_NO_BUFFER;
+      reply.in_port = inPort;
+      reply.data_length = 64;
+      reply.data = &replyData[0];
+      reply.actions_num = 1;
+      reply.actions = (struct ofl_action_header**)&action;
+
+      SendToSwitch (swtch, (struct ofl_msg_header*)&reply, xid);
+      free (action);
+    }
+
+  // All handlers must free the message when everything is ok
+  ofl_msg_free ((struct ofl_msg_header*)msg, 0);
+  return 0;
 }
 
 Ipv4Address

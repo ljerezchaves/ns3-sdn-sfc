@@ -42,6 +42,14 @@ public:
    */
   void SetSdnNetwork (Ptr<SdnNetwork> network);
 
+  /**
+   * Notify this controller of a new host connected to the OpenFlow network.
+   * \param switchDev The OpenFlow switch device.
+   * \param portNo The port number created at the OpenFlow switch.
+   * \param hostDev The device created at the host node.
+   */
+  void NotifyHostAttach (Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev);
+
 protected:
   /** Destructor implementation */
   virtual void DoDispose ();
@@ -51,6 +59,15 @@ protected:
   void HandshakeSuccessful (Ptr<const RemoteSwitch> swtch);
 
 private:
+  /**
+   * Handle ARP request messages.
+   * \param msg The packet-in message.
+   * \param swtch The switch information.
+   * \param xid Transaction id.
+   * \return 0 if everything's ok, otherwise an error number.
+   */
+  ofl_err HandleArpPacketIn (struct ofl_msg_packet_in *msg, Ptr<const RemoteSwitch> swtch, uint32_t xid);
+
   /**
    * Extract an IPv4 address from packet match.
    * \param oxm_of The OXM_IF_* IPv4 field.

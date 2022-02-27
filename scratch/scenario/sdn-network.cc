@@ -245,6 +245,12 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_host1Address = m_hostIfaces.GetAddress (0);
   m_host2Address = m_hostIfaces.GetAddress (1);
 
+  // Notify the controller about the host nodes.
+  m_controllerApp->NotifyHostAttach (
+    m_edge1SwitchDevice, m_edge1ToHost1Port->GetPortNo (), m_hostDevices.Get (0));
+  m_controllerApp->NotifyHostAttach (
+    m_edge2SwitchDevice, m_edge2ToHost1Port->GetPortNo (), m_hostDevices.Get (1));
+
   // Let's connect the OpenFlow switches to the controller. From this point
   // on it is not possible to change the OpenFlow network configuration.
   m_switchHelper->CreateOpenFlowChannels ();

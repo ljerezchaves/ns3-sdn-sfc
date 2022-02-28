@@ -39,16 +39,16 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the next address.
+   * Set the destination address.
    * \param address The address.
    */
-  void SetNextAddress (Address address);
+  void SetTargetAddress (Address address);
 
   /**
-   * Set the local TX port number.
+   * Set the local port number.
    * \param port The port number.
    */
-  void SetLocalTxPort (uint16_t port);
+  void SetLocalPort (uint16_t port);
 
 protected:
   /** Destructor implementation */
@@ -67,7 +67,7 @@ private:
 
   Ptr<Socket>                 m_socket;         //!< Local socket.
   uint16_t                    m_port;           //!< Local port.
-  Address                     m_nextAddress;    //!< Next VNF address.
+  Address                     m_targetAddress;  //!< Destination address.
 
   Ptr<RandomVariableStream>   m_pktInterRng;    //!< Packet inter-arrival time.
   Ptr<RandomVariableStream>   m_pktSizeRng;     //!< Packet size.

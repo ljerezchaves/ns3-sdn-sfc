@@ -39,10 +39,10 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the local RX port number.
+   * Set the local port number.
    * \param port The port number.
    */
-  void SetLocalRxPort (uint16_t port);
+  void SetLocalPort (uint16_t port);
 
 protected:
   /** Destructor implementation */

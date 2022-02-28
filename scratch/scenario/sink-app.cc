@@ -48,7 +48,7 @@ SinkApp::GetTypeId (void)
 }
 
 void
-SinkApp::SetLocalRxPort (uint16_t port)
+SinkApp::SetLocalPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 

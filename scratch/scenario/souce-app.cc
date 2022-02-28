@@ -40,9 +40,9 @@ SourceApp::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<SourceApp> ()
 
-    .AddAttribute ("NextAddress", "The next VNF address.",
+    .AddAttribute ("TargetAddress", "Destination address.",
                    AddressValue (),
-                   MakeAddressAccessor (&SourceApp::m_nextAddress),
+                   MakeAddressAccessor (&SourceApp::m_targetAddress),
                    MakeAddressChecker ())
     .AddAttribute ("Port", "Local port.",
                    UintegerValue (10000),
@@ -65,15 +65,15 @@ SourceApp::GetTypeId (void)
 }
 
 void
-SourceApp::SetNextAddress (Address address)
+SourceApp::SetTargetAddress (Address address)
 {
   NS_LOG_FUNCTION (this << address);
 
-  m_nextAddress = address;
+  m_targetAddress = address;
 }
 
 void
-SourceApp::SetLocalTxPort (uint16_t port)
+SourceApp::SetLocalPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 
@@ -98,7 +98,7 @@ SourceApp::StartApplication (void)
   TypeId udpFactory = TypeId::LookupByName ("ns3::UdpSocketFactory");
   m_socket = Socket::CreateSocket (GetNode (), udpFactory);
   m_socket->Bind (InetSocketAddress (Ipv4Address::GetAny (), m_port));
-  m_socket->Connect (InetSocketAddress::ConvertFrom (m_nextAddress));
+  m_socket->Connect (InetSocketAddress::ConvertFrom (m_targetAddress));
   m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket>> ());
 
   // Schedule the first packet transmission.
@@ -133,11 +133,7 @@ SourceApp::SendPacket (uint32_t size)
   int bytes = m_socket->Send (packet);
   if (bytes == static_cast<int> (packet->GetSize ()))
     {
-      NS_LOG_DEBUG ("Source app transmitted a packet with " << bytes << " bytes.");
-    }
-  else
-    {
-      NS_LOG_ERROR ("Transmission error in source app.");
+      NS_LOG_DEBUG ("Source app transmitted a packet with " << packet->GetSize () << " bytes.");
     }
 
   // Schedule the next packet transmission.

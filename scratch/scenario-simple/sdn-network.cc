@@ -61,7 +61,7 @@ SdnNetwork::EnablePcap (bool enable)
   if (enable)
     {
       CsmaHelper csmaHelper;
-      csmaHelper.EnablePcap ("switch-port", m_csmaPortDevices, true);
+      csmaHelper.EnablePcap ("switch-port", m_portDevices, true);
       csmaHelper.EnablePcap ("host", m_hostDevices, true);
       m_switchHelper->EnableOpenFlowPcap ("ofchannel", false);
     }
@@ -101,13 +101,13 @@ SdnNetwork::NotifyConstructionCompleted (void)
   // Connect each host to the network switch
   csmaDevices = csmaHelper.Install (m_switchNode, m_host1Node);
   m_switchToHost1Port = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_csmaPortDevices.Add (csmaDevices.Get (0));
+  m_portDevices.Add (csmaDevices.Get (0));
   m_host1Device = csmaDevices.Get (1);
   m_hostDevices.Add (m_host1Device);
 
   csmaDevices = csmaHelper.Install (m_switchNode, m_host2Node);
   m_switchToHost2Port = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_csmaPortDevices.Add (csmaDevices.Get (0));
+  m_portDevices.Add (csmaDevices.Get (0));
   m_host2Device = csmaDevices.Get (1);
   m_hostDevices.Add (m_host2Device);
 

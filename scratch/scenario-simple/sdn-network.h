@@ -51,7 +51,7 @@ protected:
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.
   Ptr<OFSwitch13InternalHelper> m_switchHelper;     //!< Switch helper.
-  NetDeviceContainer            m_csmaPortDevices;  //!< Switch port devices.
+  NetDeviceContainer            m_portDevices;      //!< Switch port devices.
   NetDeviceContainer            m_hostDevices;      //!< Host devices.
 
 public:

@@ -115,6 +115,8 @@ EnableVerbose (bool enable)
 
       LogComponentEnable ("SdnController",            logLevelAll);
       LogComponentEnable ("SdnNetwork",               logLevelAll);
+      LogComponentEnable ("SourceApp",                logLevelAll);
+      LogComponentEnable ("SinkApp",                  logLevelAll);
 
       // OFSwitch13 module components.
       LogComponentEnable ("OFSwitch13Controller",     logLevelWarn);

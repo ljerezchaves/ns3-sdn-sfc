@@ -76,6 +76,25 @@ SdnController::NotifyHostAttach (
 }
 
 void
+SdnController::NotifyVnfAttach (
+  Ptr<OFSwitch13Device> switchDev, uint32_t portNo,
+  Ipv4Address ipv4Address, Mac48Address macAddress)
+{
+  NS_LOG_FUNCTION (this << switchDev << portNo << ipv4Address << macAddress);
+
+  // Save the IP and MAC addresses for further ARP resolution.
+  SaveArpEntry (ipv4Address, macAddress);
+
+  // Foward IP packets addressed to the VNF connected to this port.
+  std::ostringstream cmd;
+  cmd << "flow-mod cmd=add,prio=1024,table=0"
+      << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+      << ",ip_dst="       << ipv4Address
+      << " apply:output=" << portNo;
+  DpctlExecute (switchDev->GetDatapathId (), cmd.str ());
+}
+
+void
 SdnController::DoDispose ()
 {
   NS_LOG_FUNCTION (this);

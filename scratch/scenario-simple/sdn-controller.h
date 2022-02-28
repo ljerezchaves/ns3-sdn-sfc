@@ -50,6 +50,16 @@ public:
    */
   void NotifyHostAttach (Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev);
 
+  /**
+   * Notify this controller of a new VNF connected to the OpenFlow network.
+   * \param switchDev The OpenFlow switch device.
+   * \param portNo The port number created at the OpenFlow switch.
+   * \param ipv4Address The VNF IPv4 address.
+   * \param macAddress The VNF MAC address.
+   */
+  void NotifyVnfAttach (Ptr<OFSwitch13Device> switchDev, uint32_t portNo,
+                        Ipv4Address ipv4Address, Mac48Address macAddress);
+
 protected:
   /** Destructor implementation */
   virtual void DoDispose ();

@@ -19,6 +19,7 @@
 
 #include <ns3/ofswitch13-module.h>
 #include "sdn-controller.h"
+#include "vnf-app.h"
 
 using namespace ns3;
 
@@ -47,6 +48,17 @@ protected:
 
   // Inherited from ObjectBase.
   virtual void NotifyConstructionCompleted (void);
+
+  /**
+   * Install a VNF application on the switch node, connecting it to the switch
+   * device via a new VirtualNetDevice acting as an OpenFlow logical port.
+   * \param switchDevice The OpenFlow switch device.
+   * \param application The VNF application.
+   * \param ipv4Address The VNF IPv4 address.
+   * \param macAddress The VNF MAC address.
+   */
+  void InstallVnf (Ptr<OFSwitch13Device> switchDevice, Ptr<VnfApp> application,
+                   Ipv4Address ipv4Address, Mac48Address macAddress);
 
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.

@@ -14,6 +14,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <ns3/virtual-net-device-module.h>
 #include "sdn-network.h"
 #include "source-app.h"
 #include "sink-app.h"
@@ -144,4 +145,24 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_host1Node->AddApplication (sourceApp);
 
   Object::NotifyConstructionCompleted ();
+}
+
+void
+SdnNetwork::InstallVnf (
+  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfApp> application,
+  Ipv4Address ipv4Address, Mac48Address macAddress)
+{
+  NS_LOG_FUNCTION (this << switchDevice << application << ipv4Address << macAddress);
+
+  // Create the virtual net device to work as the logical port on the switch.
+  Ptr<VirtualNetDevice> virtualDevice = CreateObject<VirtualNetDevice> ();
+  virtualDevice->SetAttribute ("Mtu", UintegerValue (3000));
+  virtualDevice->SetAddress (macAddress);
+  Ptr<OFSwitch13Port> logicalPort = switchDevice->AddSwitchPort (virtualDevice);
+  m_portDevices.Add (virtualDevice);
+
+  // Configure the VNF application and notify the controller.
+  application->SetVirtualDevice (virtualDevice);
+  m_controllerApp->NotifyVnfAttach (
+    switchDevice, logicalPort->GetPortNo (), ipv4Address, macAddress);
 }

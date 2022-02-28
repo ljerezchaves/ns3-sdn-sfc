@@ -50,6 +50,16 @@ protected:
   virtual void NotifyConstructionCompleted (void);
 
   /**
+   * Configure the SDN network topology.
+   */
+  void ConfigureTopology (void);
+
+  /**
+   * Configure the aplications for traffic in the network.
+   */
+  void ConfigureApplications (void);
+
+  /**
    * Install a VNF application on the switch node, connecting it to the switch
    * device via a new VirtualNetDevice acting as an OpenFlow logical port.
    * \param switchDevice The OpenFlow switch device.

@@ -73,6 +73,20 @@ SdnNetwork::NotifyConstructionCompleted (void)
 {
   NS_LOG_FUNCTION (this);
 
+  ConfigureTopology ();
+  ConfigureApplications ();
+
+  // Let's connect the OpenFlow switches to the controller. From this point
+  // on it is not possible to change the OpenFlow network configuration.
+  m_switchHelper->CreateOpenFlowChannels ();
+
+  Object::NotifyConstructionCompleted ();
+}
+
+void
+SdnNetwork::ConfigureTopology (void)
+{
+  NS_LOG_FUNCTION (this);
   // Create the OFSwitch13 helper.
   m_switchHelper = CreateObject<OFSwitch13InternalHelper> ();
 
@@ -118,7 +132,7 @@ SdnNetwork::NotifyConstructionCompleted (void)
   Ipv4AddressHelper hostAddressHelper;
   internetStackHelper.Install (m_host1Node);
   internetStackHelper.Install (m_host2Node);
-  hostAddressHelper.SetBase ("10.1.0.0", "255.255.0.0");
+  hostAddressHelper.SetBase ("10.0.0.0", "255.0.0.0");
   hostIfaces = hostAddressHelper.Assign (m_hostDevices);
   m_host1Address = hostIfaces.GetAddress (0);
   m_host2Address = hostIfaces.GetAddress (1);
@@ -128,23 +142,36 @@ SdnNetwork::NotifyConstructionCompleted (void)
     m_switchDevice, m_switchToHost1Port->GetPortNo (), m_host1Device);
   m_controllerApp->NotifyHostAttach (
     m_switchDevice, m_switchToHost2Port->GetPortNo (), m_host2Device);
+}
 
-  // Let's connect the OpenFlow switches to the controller. From this point
-  // on it is not possible to change the OpenFlow network configuration.
-  m_switchHelper->CreateOpenFlowChannels ();
+void
+SdnNetwork::ConfigureApplications (void)
+{
+  NS_LOG_FUNCTION (this);
 
-  // Configure traffic between hosts 1 and 2
+  // Configure the sink (last) application on host 2.
+  uint16_t port = 9999;
   Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
-  sinkApp->SetLocalPort (10000);
+  sinkApp->SetLocalPort (port);
   sinkApp->SetStartTime (Seconds (0));
   m_host2Node->AddApplication (sinkApp);
 
+  // Configure the VNF (middle) application on the switch.
+  Ipv4Address vnfIpAddress ("10.10.0.1");
+  Mac48Address vnfMacAddress = Mac48Address::Allocate ();
+  ObjectFactory vnfFactory;
+  vnfFactory.SetTypeId (VnfApp::GetTypeId ());
+  vnfFactory.Set ("LocalAddress", AddressValue (vnfIpAddress));
+  vnfFactory.Set ("TargetAddress", AddressValue (InetSocketAddress (m_host2Address, port)));
+  vnfFactory.Set ("Port", UintegerValue (port));
+  vnfFactory.Set ("PktSizeScalingFactor", DoubleValue (1.5));
+  InstallVnf (m_switchDevice, vnfFactory.Create ()->GetObject<VnfApp> (), vnfIpAddress, vnfMacAddress);
+
+  // Configure the source (first) application on host 1.
   Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
   sourceApp->SetStartTime (Seconds (1));
-  sourceApp->SetTargetAddress (InetSocketAddress (m_host2Address, 10000));
+  sourceApp->SetTargetAddress (InetSocketAddress (vnfIpAddress, port));
   m_host1Node->AddApplication (sourceApp);
-
-  Object::NotifyConstructionCompleted ();
 }
 
 void

@@ -159,12 +159,14 @@ SdnNetwork::ConfigureApplications (void)
   // Configure the VNF (middle) application on the switch.
   Ipv4Address vnfIpAddress ("10.10.0.1");
   Mac48Address vnfMacAddress = Mac48Address::Allocate ();
+
   ObjectFactory vnfFactory;
   vnfFactory.SetTypeId (VnfApp::GetTypeId ());
   vnfFactory.Set ("LocalAddress", AddressValue (vnfIpAddress));
   vnfFactory.Set ("TargetAddress", AddressValue (InetSocketAddress (m_host2Address, port)));
   vnfFactory.Set ("Port", UintegerValue (port));
   vnfFactory.Set ("PktSizeScalingFactor", DoubleValue (1.5));
+
   InstallVnf (m_switchDevice, vnfFactory.Create ()->GetObject<VnfApp> (), vnfIpAddress, vnfMacAddress);
 
   // Configure the source (first) application on host 1.
@@ -183,7 +185,6 @@ SdnNetwork::InstallVnf (
 
   // Create the virtual net device to work as the logical port on the switch.
   Ptr<VirtualNetDevice> virtualDevice = CreateObject<VirtualNetDevice> ();
-  virtualDevice->SetAttribute ("Mtu", UintegerValue (3000));
   virtualDevice->SetAddress (macAddress);
   Ptr<OFSwitch13Port> logicalPort = switchDevice->AddSwitchPort (virtualDevice);
   m_portDevices.Add (virtualDevice);

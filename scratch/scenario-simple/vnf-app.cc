@@ -40,10 +40,10 @@ VnfApp::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<VnfApp> ()
 
-    .AddAttribute ("Ipv4Address", "VNF IPv4 address.",
-                   Ipv4AddressValue (),
-                   MakeIpv4AddressAccessor (&VnfApp::m_ipv4Address),
-                   MakeIpv4AddressChecker ())
+    .AddAttribute ("LocalAddress", "VNF IPv4 address.",
+                   AddressValue (),
+                   MakeAddressAccessor (&VnfApp::m_ipv4Address),
+                   MakeAddressChecker ())
     .AddAttribute ("TargetAddress", "Destination socket address.",
                    AddressValue (),
                    MakeAddressAccessor (&VnfApp::m_targetAddress),
@@ -109,6 +109,8 @@ VnfApp::ProcessPacket (Ptr<Packet> packet, const Address& source,
   UdpHeader udpHeader;
   packet->RemoveHeader (udpHeader);
   NS_LOG_DEBUG (udpHeader);
+
+  NS_LOG_UNCOND ("Got HERE!!!!");
 
   // // Create the new packet with adjusted size.
   // int newPacketSize = packet->GetSize () * m_pktSizeScale;

@@ -129,6 +129,12 @@ SdnController::HandshakeSuccessful (Ptr<const RemoteSwitch> swtch)
   // Send ARP requests to the controller
   DpctlExecute (swDpId, "flow-mod cmd=add,table=0,prio=20 "
                 "eth_type=0x0806,arp_op=1 apply:output=ctrl");
+
+  // Simple rules to forward packets between hosts
+  DpctlExecute (swDpId, "flow-mod cmd=add,table=0,prio=10 "
+                "eth_type=0x0800,in_port=1 apply:output=2");
+  DpctlExecute (swDpId, "flow-mod cmd=add,table=0,prio=10 "
+                "eth_type=0x0800,in_port=2 apply:output=1");
 }
 
 ofl_err

@@ -15,6 +15,8 @@
  */
 
 #include "sdn-network.h"
+#include "source-app.h"
+#include "sink-app.h"
 
 NS_LOG_COMPONENT_DEFINE ("SdnNetwork");
 NS_OBJECT_ENSURE_REGISTERED (SdnNetwork);
@@ -129,6 +131,17 @@ SdnNetwork::NotifyConstructionCompleted (void)
   // Let's connect the OpenFlow switches to the controller. From this point
   // on it is not possible to change the OpenFlow network configuration.
   m_switchHelper->CreateOpenFlowChannels ();
+
+  // Configure traffic between hosts 1 and 2
+  Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
+  sinkApp->SetLocalPort (10000);
+  sinkApp->SetStartTime (Seconds (0));
+  m_host2Node->AddApplication (sinkApp);
+
+  Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
+  sourceApp->SetStartTime (Seconds (1));
+  sourceApp->SetTargetAddress (InetSocketAddress (m_host2Address, 10000));
+  m_host1Node->AddApplication (sourceApp);
 
   Object::NotifyConstructionCompleted ();
 }

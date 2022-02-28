@@ -39,20 +39,20 @@ SinkApp::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<SinkApp> ()
 
-    .AddAttribute ("Port", "Local port.",
+    .AddAttribute ("LocalUdpPort", "Local UDP port.",
                    UintegerValue (10000),
-                   MakeUintegerAccessor (&SinkApp::m_port),
+                   MakeUintegerAccessor (&SinkApp::m_localUdpPort),
                    MakeUintegerChecker<uint16_t> ())
   ;
   return tid;
 }
 
 void
-SinkApp::SetLocalPort (uint16_t port)
+SinkApp::SetLocalUdpPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 
-  m_port = port;
+  m_localUdpPort = port;
 }
 
 void
@@ -70,9 +70,10 @@ SinkApp::StartApplication (void)
   NS_LOG_FUNCTION (this);
 
   NS_LOG_INFO ("Opening the RX UDP socket.");
+  InetSocketAddress localAddress (Ipv4Address::GetAny (), m_localUdpPort);
   TypeId udpFactory = TypeId::LookupByName ("ns3::UdpSocketFactory");
   m_socket = Socket::CreateSocket (GetNode (), udpFactory);
-  m_socket->Bind (InetSocketAddress (Ipv4Address::GetAny (), m_port));
+  m_socket->Bind (localAddress);
   m_socket->SetRecvCallback (MakeCallback (&SinkApp::ReadPacket, this));
 }
 
@@ -95,7 +96,8 @@ SinkApp::ReadPacket (Ptr<Socket> socket)
   NS_LOG_FUNCTION (this << socket);
 
   Ptr<Packet> packet = socket->Recv ();
-  NS_LOG_DEBUG ("Sink app received a packet with " << packet->GetSize () << " bytes.");
+  uint32_t bytes = packet->GetSize ();
+  NS_LOG_DEBUG ("Sink app received a packet of " << bytes << " bytes.");
 }
 
 } // namespace ns3

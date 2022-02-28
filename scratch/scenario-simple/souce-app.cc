@@ -40,13 +40,17 @@ SourceApp::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<SourceApp> ()
 
-    .AddAttribute ("TargetAddress", "Destination address.",
-                   AddressValue (),
-                   MakeAddressAccessor (&SourceApp::m_targetAddress),
-                   MakeAddressChecker ())
-    .AddAttribute ("Port", "Local port.",
+    .AddAttribute ("LocalUdpPort", "Local UDP port.",
                    UintegerValue (10000),
-                   MakeUintegerAccessor (&SourceApp::m_port),
+                   MakeUintegerAccessor (&SourceApp::m_localUdpPort),
+                   MakeUintegerChecker<uint16_t> ())
+    .AddAttribute ("NextIpAddress", "Next IPv4 address.",
+                   Ipv4AddressValue (),
+                   MakeIpv4AddressAccessor (&SourceApp::m_nextIpAddress),
+                   MakeIpv4AddressChecker ())
+    .AddAttribute ("NextUdpPort", "Next UDP port.",
+                   UintegerValue (10000),
+                   MakeUintegerAccessor (&SourceApp::m_nextUdpPort),
                    MakeUintegerChecker<uint16_t> ())
 
     // These attributes must be configured for the desired traffic pattern.
@@ -65,19 +69,27 @@ SourceApp::GetTypeId (void)
 }
 
 void
-SourceApp::SetTargetAddress (Address address)
-{
-  NS_LOG_FUNCTION (this << address);
-
-  m_targetAddress = address;
-}
-
-void
-SourceApp::SetLocalPort (uint16_t port)
+SourceApp::SetLocalUdpPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 
-  m_port = port;
+  m_localUdpPort = port;
+}
+
+void
+SourceApp::SetNextIpAddress (Ipv4Address address)
+{
+  NS_LOG_FUNCTION (this << address);
+
+  m_nextIpAddress = address;
+}
+
+void
+SourceApp::SetNextUdpPort (uint16_t port)
+{
+  NS_LOG_FUNCTION (this << port);
+
+  m_nextUdpPort = port;
 }
 
 void
@@ -95,10 +107,12 @@ SourceApp::StartApplication (void)
   NS_LOG_FUNCTION (this);
 
   NS_LOG_INFO ("Opening the TX UDP socket.");
+  InetSocketAddress localAddress (Ipv4Address::GetAny (), m_localUdpPort);
+  InetSocketAddress nextAddress (m_nextIpAddress, m_nextUdpPort);
   TypeId udpFactory = TypeId::LookupByName ("ns3::UdpSocketFactory");
   m_socket = Socket::CreateSocket (GetNode (), udpFactory);
-  m_socket->Bind (InetSocketAddress (Ipv4Address::GetAny (), m_port));
-  m_socket->Connect (InetSocketAddress::ConvertFrom (m_targetAddress));
+  m_socket->Bind (localAddress);
+  m_socket->Connect (nextAddress);
   m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket>> ());
 
   // Schedule the first packet transmission.
@@ -133,7 +147,7 @@ SourceApp::SendPacket (uint32_t size)
   int bytes = m_socket->Send (packet);
   if (bytes == static_cast<int> (packet->GetSize ()))
     {
-      NS_LOG_DEBUG ("Source app transmitted a packet with " << packet->GetSize () << " bytes.");
+      NS_LOG_DEBUG ("Source app transmitted a packet of " << bytes << " bytes.");
     }
 
   // Schedule the next packet transmission.

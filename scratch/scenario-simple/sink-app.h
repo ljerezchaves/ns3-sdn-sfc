@@ -39,10 +39,10 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the local port number.
+   * Set the local UDP port number.
    * \param port The port number.
    */
-  void SetLocalPort (uint16_t port);
+  void SetLocalUdpPort (uint16_t port);
 
 protected:
   /** Destructor implementation */
@@ -59,8 +59,8 @@ private:
    */
   void ReadPacket (Ptr<Socket> socket);
 
-  Ptr<Socket>                 m_socket;         //!< Local socket.
-  uint16_t                    m_port;           //!< Local port.
+  Ptr<Socket>                 m_socket;         //!< UDP socket.
+  uint16_t                    m_localUdpPort;   //!< Local UDP port.
 };
 
 } // namespace ns3

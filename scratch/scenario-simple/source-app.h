@@ -39,16 +39,22 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the destination address.
-   * \param address The address.
-   */
-  void SetTargetAddress (Address address);
-
-  /**
-   * Set the local port number.
+   * Set the local UDP port number.
    * \param port The port number.
    */
-  void SetLocalPort (uint16_t port);
+  void SetLocalUdpPort (uint16_t port);
+
+  /**
+   * Set the next IPv5 address.
+   * \param address The IP address.
+   */
+  void SetNextIpAddress (Ipv4Address address);
+
+  /**
+   * Set the next UDP port number.
+   * \param port The port number.
+   */
+  void SetNextUdpPort (uint16_t port);
 
 protected:
   /** Destructor implementation */
@@ -65,9 +71,10 @@ private:
    */
   void SendPacket (uint32_t size);
 
-  Ptr<Socket>                 m_socket;         //!< Local socket.
-  uint16_t                    m_port;           //!< Local port.
-  Address                     m_targetAddress;  //!< Destination address.
+  Ptr<Socket>                 m_socket;         //!< UDP socket.
+  uint16_t                    m_localUdpPort;   //!< Local UDP port.
+  uint16_t                    m_nextUdpPort;    //!< Next UDP port
+  Ipv4Address                 m_nextIpAddress;  //!< Next IPv4 address.
 
   Ptr<RandomVariableStream>   m_pktInterRng;    //!< Packet inter-arrival time.
   Ptr<RandomVariableStream>   m_pktSizeRng;     //!< Packet size.

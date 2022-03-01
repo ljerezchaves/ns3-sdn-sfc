@@ -21,8 +21,6 @@
 #include "vnf-info.h"
 #include "vnf-app.h"
 
-using namespace std;
-
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("VnfInfo");

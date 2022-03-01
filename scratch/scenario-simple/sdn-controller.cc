@@ -19,6 +19,8 @@
 #include "sdn-controller.h"
 #include "sdn-network.h"
 
+namespace ns3 {
+
 NS_LOG_COMPONENT_DEFINE ("SdnController");
 NS_OBJECT_ENSURE_REGISTERED (SdnController);
 
@@ -305,3 +307,5 @@ SdnController::GetArpEntry (Ipv4Address ip)
     }
   NS_ABORT_MSG ("No ARP information for this IP.");
 }
+
+} // namespace ns3

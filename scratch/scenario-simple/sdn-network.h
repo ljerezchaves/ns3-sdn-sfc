@@ -19,9 +19,10 @@
 
 #include <ns3/ofswitch13-module.h>
 #include "sdn-controller.h"
-#include "vnf-app.h"
 
-using namespace ns3;
+namespace ns3 {
+
+class VnfApp;
 
 /** The OpenFlow network. */
 class SdnNetwork : public Object
@@ -53,6 +54,11 @@ protected:
    * Configure the SDN network topology.
    */
   void ConfigureTopology (void);
+
+  /**
+   * Configure the VNFs.
+   */
+  void ConfigureFunctions (void);
 
   /**
    * Configure the aplications for traffic in the network.
@@ -101,4 +107,5 @@ public:
   Ptr<OFSwitch13Port>           m_serverToSwitchDlinkPort;
 };
 
+} // namespace ns3
 #endif /* SDN_NETWORK_H */

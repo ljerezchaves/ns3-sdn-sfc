@@ -19,7 +19,7 @@
 
 #include <ns3/ofswitch13-module.h>
 
-using namespace ns3;
+namespace ns3 {
 
 class SdnNetwork;
 
@@ -118,4 +118,5 @@ private:
   static IpMacMap_t m_arpTable;     //!< ARP resolution table.
 };
 
+} // namespace ns3
 #endif /* SDN_CONTROLLER_H */

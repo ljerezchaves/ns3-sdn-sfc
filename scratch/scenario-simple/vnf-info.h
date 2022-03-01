@@ -81,11 +81,14 @@ public:
    * Notify about a new copy of this VNF created in the network.
    * \param serverApp The VNF app on the server switch.
    * \param serverDevice The server switch node.
+   * \param serverPort The port number for app in server switch.
    * \param switchApp The VNF app on the network switch.
    * \param switchDevice The network switch node.
+   * \param switchPort The port number for app in network switch.
    */
-  void NewVnfCopy (Ptr<VnfApp> serverApp, Ptr<OFSwitch13Device> serverDevice,
-                   Ptr<VnfApp> switchApp, Ptr<OFSwitch13Device> switchDevice);
+  void NewVnfCopy (
+    Ptr<VnfApp> serverApp, Ptr<OFSwitch13Device> serverDevice, uint32_t serverPort,
+    Ptr<VnfApp> switchApp, Ptr<OFSwitch13Device> switchDevice, uint32_t switchPort);
 
   /**
    * Get the VNF information from the global map for a specific VNF ID.
@@ -101,12 +104,12 @@ protected:
 private:
   uint32_t        m_vnfId;                //!< VNF ID
 
-  Ipv4Address     m_switchIpAddress;      //!< VNF app IP on the switch node
   Ipv4Address     m_serverIpAddress;      //!< VNF app IP on the server node
-  Mac48Address    m_switchMacAddress;     //!< VNF app MAC on the switch node
+  Ipv4Address     m_switchIpAddress;      //!< VNF app IP on the switch node
   Mac48Address    m_serverMacAddress;     //!< VNF app MAC on the server node
-  double          m_switchScaling;        //!< Scaling factor at the switch
+  Mac48Address    m_switchMacAddress;     //!< VNF app MAC on the switch node
   double          m_serverScaling;        //!< Scaling factor at the server
+  double          m_switchScaling;        //!< Scaling factor at the switch
 
   ObjectFactory   m_serverFactory;        //!< Factory for server apps
   ObjectFactory   m_switchFactory;        //!< Factory for switch apps
@@ -114,12 +117,12 @@ private:
   /** List of VNF copies */
   typedef std::vector<Ptr<VnfApp>> VnfAppList_t;
   typedef std::vector<uint16_t> PortNoList_t;
-  VnfAppList_t              m_switchAppList;  //!< List of apps on switches nodes
   VnfAppList_t              m_serverAppList;  //!< List of apps on servers nodes
-  OFSwitch13DeviceContainer m_switchDevList;  //!< List of switch devices
+  VnfAppList_t              m_switchAppList;  //!< List of apps on switches nodes
   OFSwitch13DeviceContainer m_serverDevList;  //!< List of server devices
-  PortNoList_t              m_switchPortList; //!< List of ports on switch nodes
+  OFSwitch13DeviceContainer m_switchDevList;  //!< List of switch devices
   PortNoList_t              m_serverPortList; //!< List of ports on server nodes
+  PortNoList_t              m_switchPortList; //!< List of ports on switch nodes
   int                       m_activeCopyIdx;  //!< Index of the active copy
 
   /**

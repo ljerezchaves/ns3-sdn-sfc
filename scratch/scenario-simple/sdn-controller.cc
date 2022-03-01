@@ -93,18 +93,30 @@ SdnController::NotifyNewVnf (Ptr<VnfInfo> vnfInfo)
 
 void
 SdnController::NotifyVnfAttach (
-  Ptr<OFSwitch13Device> switchDev, uint32_t portNo,
-  Ipv4Address ipv4Address, Mac48Address macAddress)
+  Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
+  Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
+  Ptr<VnfInfo> vnfInfo, int tableId)
 {
-  NS_LOG_FUNCTION (this << switchDev << portNo << ipv4Address << macAddress);
+  NS_LOG_FUNCTION (this << serverDevice << serverPortNo <<
+                   switchDevice << switchPortNo << vnfInfo);
 
   // Foward IP packets addressed to the VNF connected to this port.
-  std::ostringstream cmd;
-  cmd << "flow-mod cmd=add,prio=1024,table=1"
-      << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
-      << ",ip_dst="       << ipv4Address
-      << " apply:output=" << portNo;
-  DpctlExecute (switchDev->GetDatapathId (), cmd.str ());
+  {
+    std::ostringstream cmd;
+    cmd << "flow-mod cmd=add,prio=1024,table=" << tableId
+        << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+        << ",ip_dst="       << vnfInfo->GetServerIpAddr ()
+        << " apply:output=" << serverPortNo;
+    DpctlExecute (serverDevice->GetDatapathId (), cmd.str ());
+  }
+  {
+    std::ostringstream cmd;
+    cmd << "flow-mod cmd=add,prio=1024,table=" << tableId
+        << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+        << ",ip_dst="       << vnfInfo->GetSwitchIpAddr ()
+        << " apply:output=" << switchPortNo;
+    DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
+  }
 }
 
 void

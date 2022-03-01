@@ -170,14 +170,14 @@ SdnNetwork::ConfigureFunctions (void)
 {
   NS_LOG_FUNCTION (this);
 
-  // Create and configure the VNF information.
+  // Create and configure the VNF (ID 1).
   Ptr<VnfInfo> vnfInfo = CreateObject<VnfInfo> (1);
   vnfInfo->SetSwitchScaling (1.5);
   vnfInfo->SetServerScaling (1/1.5);
+  m_controllerApp->NotifyNewVnf (vnfInfo);
 
   // Install a copy of this VNF in the switch and server nodes
-  m_controllerApp->NotifyNewVnf (vnfInfo);
-  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode, m_serverDevice, vnfInfo);
+  InstallVnfCopy (m_serverNode, m_serverDevice, m_switchNode, m_switchDevice, vnfInfo);
 }
 
 void
@@ -221,42 +221,42 @@ SdnNetwork::ConfigureApplications (void)
 
 void
 SdnNetwork::InstallVnfCopy (
-  Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
   Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
+  Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
   Ptr<VnfInfo> vnfInfo)
 {
-  NS_LOG_FUNCTION (this << switchNode << switchDevice << serverNode << serverDevice << vnfInfo);
+  NS_LOG_FUNCTION (this << serverNode << serverDevice <<
+                   switchNode << switchDevice << vnfInfo);
 
-  // First, install the application on the network switch
-  // Create the virtual net device to work as the logical port on the switch.
-  Ptr<VirtualNetDevice> virtualDevSwitch = CreateObject<VirtualNetDevice> ();
-  virtualDevSwitch->SetAddress (vnfInfo->GetSwitchMacAddr ());
-  Ptr<OFSwitch13Port> logicalPortSwitch = switchDevice->AddSwitchPort (virtualDevSwitch);
-  m_portDevices.Add (virtualDevSwitch);
-
-  // Configure the VNF application and notify the controller.
-  Ptr<VnfApp> switchApp = vnfInfo->CreateSwitchApp ();
-  switchApp->SetVirtualDevice (virtualDevSwitch);
-  switchNode->AddApplication (switchApp);
-  m_controllerApp->NotifyVnfAttach (
-    switchDevice, logicalPortSwitch->GetPortNo (), vnfInfo->GetSwitchIpAddr (), vnfInfo->GetSwitchMacAddr ());
-
-  // Then, install the application on the server switch
+  // First, install the application on the server switch
   // Create the virtual net device to work as the logical port on the switch.
   Ptr<VirtualNetDevice> virtualDevServer = CreateObject<VirtualNetDevice> ();
   virtualDevServer->SetAddress (vnfInfo->GetServerMacAddr ());
   Ptr<OFSwitch13Port> logicalPortServer = serverDevice->AddSwitchPort (virtualDevServer);
   m_portDevices.Add (virtualDevServer);
 
-  // Configure the VNF application and notify the controller.
+  // Create the VNF application.
   Ptr<VnfApp> serverApp = vnfInfo->CreateServerApp ();
   serverApp->SetVirtualDevice (virtualDevServer);
   serverNode->AddApplication (serverApp);
-  m_controllerApp->NotifyVnfAttach (
-    serverDevice, logicalPortServer->GetPortNo (), vnfInfo->GetServerIpAddr (), vnfInfo->GetServerMacAddr ());
 
-  // Notify the VNF information about this new copy
-  vnfInfo->NewVnfCopy (serverApp, m_serverDevice, switchApp, m_switchDevice);
+  // Then, install the application on the network switch
+  // Create the virtual net device to work as the logical port on the switch.
+  Ptr<VirtualNetDevice> virtualDevSwitch = CreateObject<VirtualNetDevice> ();
+  virtualDevSwitch->SetAddress (vnfInfo->GetSwitchMacAddr ());
+  Ptr<OFSwitch13Port> logicalPortSwitch = switchDevice->AddSwitchPort (virtualDevSwitch);
+  m_portDevices.Add (virtualDevSwitch);
+
+  // Create the VNF application.
+  Ptr<VnfApp> switchApp = vnfInfo->CreateSwitchApp ();
+  switchApp->SetVirtualDevice (virtualDevSwitch);
+  switchNode->AddApplication (switchApp);
+
+  // Notify the controller about this new VNF copy
+  m_controllerApp->NotifyVnfAttach (
+    serverDevice, logicalPortServer->GetPortNo (),
+    switchDevice, logicalPortSwitch->GetPortNo (),
+    vnfInfo, 1);
 }
 
 } // namespace ns3

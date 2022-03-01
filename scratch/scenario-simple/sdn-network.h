@@ -74,8 +74,8 @@ protected:
    * \param serverDevice The server switch device
    * \param vnfInfo The VNF information
    */
-  void InstallVnfCopy (Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
-                       Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
+  void InstallVnfCopy (Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
+                       Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
                        Ptr<VnfInfo> vnfInfo);
 
 private:

@@ -55,13 +55,16 @@ public:
 
   /**
    * Notify this controller of a new VNF connected to the OpenFlow network.
-   * \param switchDev The OpenFlow switch device.
-   * \param portNo The port number created at the OpenFlow switch.
-   * \param ipv4Address The VNF IPv4 address.
-   * \param macAddress The VNF MAC address.
+   * \param serverDevice The OpenFlow switch device
+   * \param serverPortNo The port number on the switch device
+   * \param switchDevice The OpenFlow server device
+   * \param switchPortNo The port number on the server device
+   * \param vnfInfo The VNF information.
+   * \param tableId The pipeline table to save this information.
    */
-  void NotifyVnfAttach (Ptr<OFSwitch13Device> switchDev, uint32_t portNo,
-                        Ipv4Address ipv4Address, Mac48Address macAddress);
+  void NotifyVnfAttach (Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
+                        Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
+                        Ptr<VnfInfo> vnfInfo, int tableId = 1);
 
   /**
    * Perform an ARP resolution

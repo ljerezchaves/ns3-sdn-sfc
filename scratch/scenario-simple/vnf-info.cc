@@ -31,17 +31,16 @@ VnfInfo::VnfInfoMap_t VnfInfo::m_vnfInfoById;
 
 VnfInfo::VnfInfo (uint32_t vnfId)
   : m_vnfId (vnfId),
-  m_switchScaling (1),
   m_serverScaling (1),
+  m_switchScaling (1),
   m_activeCopyIdx (0)
 {
   NS_LOG_FUNCTION (this);
 
   // Allocate virtual IP addresses for this VNF
   std::string ipServerStr = "10.10.1." + std::to_string (vnfId);
-  m_serverIpAddress = Ipv4Address (ipServerStr.c_str ());
-
   std::string ipSwitchStr = "10.10.2." + std::to_string (vnfId);
+  m_serverIpAddress = Ipv4Address (ipServerStr.c_str ());
   m_switchIpAddress = Ipv4Address (ipSwitchStr.c_str ());
 
   // Allocate virtual MAC addresses for this VNF
@@ -49,13 +48,13 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   m_switchMacAddress = Mac48Address::Allocate ();
 
   // Configure the factories
-  m_switchFactory.SetTypeId (VnfApp::GetTypeId ());
-  m_switchFactory.Set ("VnfId", UintegerValue (vnfId));
-  m_switchFactory.Set ("Ipv4Address", Ipv4AddressValue (m_switchIpAddress));
-
   m_serverFactory.SetTypeId (VnfApp::GetTypeId ());
   m_serverFactory.Set ("VnfId", UintegerValue (vnfId));
   m_serverFactory.Set ("Ipv4Address", Ipv4AddressValue (m_serverIpAddress));
+
+  m_switchFactory.SetTypeId (VnfApp::GetTypeId ());
+  m_switchFactory.Set ("VnfId", UintegerValue (vnfId));
+  m_switchFactory.Set ("Ipv4Address", Ipv4AddressValue (m_switchIpAddress));
 
   RegisterVnfInfo (Ptr<VnfInfo> (this));
 }
@@ -189,15 +188,19 @@ VnfInfo::CreateSwitchApp (void)
 }
 
 void
-VnfInfo::NewVnfCopy (Ptr<VnfApp> serverApp, Ptr<OFSwitch13Device> serverDevice,
-                     Ptr<VnfApp> switchApp, Ptr<OFSwitch13Device> switchDevice)
+VnfInfo::NewVnfCopy (
+  Ptr<VnfApp> serverApp, Ptr<OFSwitch13Device> serverDevice, uint32_t serverPort,
+  Ptr<VnfApp> switchApp, Ptr<OFSwitch13Device> switchDevice, uint32_t switchPort)
 {
-  NS_LOG_FUNCTION (this << serverApp << serverDevice << switchApp << switchDevice);
+  NS_LOG_FUNCTION (this << serverApp << serverDevice << serverPort <<
+                   switchApp << switchDevice << switchPort);
 
   m_serverAppList.push_back (serverApp);
   m_switchAppList.push_back (switchApp);
   m_serverDevList.Add (serverDevice);
   m_switchDevList.Add (switchDevice);
+  m_serverPortList.push_back (serverPort);
+  m_switchPortList.push_back (switchPort);
 }
 
 Ptr<VnfInfo>

@@ -93,6 +93,16 @@ protected:
    */
   void RemoveHeaders (Ptr<Packet> packet);
 
+  /**
+   * Inser the UDP / IP / Ethernet headers on the output packet.
+   * \param packet The output packet.
+   * \param srcIp The source IP address.
+   * \param dstIp The destination IP address.
+   * \param srcPort The source UDP port.
+   * \param dstPort The destination UDP port.
+   * \param srcMac The source MAC address.
+   * \param dstMac The destination MAC address.
+   */
   void InsertHeaders (Ptr<Packet> packet, Ipv4Address srcIp, Ipv4Address dstIp,
   uint16_t srcPort, uint16_t dstPort, Mac48Address srcMac, Mac48Address dstMac);
 

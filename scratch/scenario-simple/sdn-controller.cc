@@ -22,6 +22,9 @@
 NS_LOG_COMPONENT_DEFINE ("SdnController");
 NS_OBJECT_ENSURE_REGISTERED (SdnController);
 
+// Initializing static members.
+SdnController::IpMacMap_t SdnController::m_arpTable;
+
 // OpenFlow flow-mod flags.
 #define FLAGS_REMOVED_OVERLAP_RESET ((OFPFF_SEND_FLOW_REM | OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
 #define FLAGS_OVERLAP_RESET ((OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
@@ -282,7 +285,7 @@ SdnController::SaveArpEntry (Ipv4Address ipAddr, Mac48Address macAddr)
 {
   std::pair<Ipv4Address, Mac48Address> entry (ipAddr, macAddr);
   std::pair <IpMacMap_t::iterator, bool> ret;
-  ret = m_arpTable.insert (entry);
+  ret = SdnController::m_arpTable.insert (entry);
   if (ret.second == true)
     {
       NS_LOG_INFO ("New ARP entry: " << ipAddr << " - " << macAddr);
@@ -294,7 +297,7 @@ Mac48Address
 SdnController::GetArpEntry (Ipv4Address ip)
 {
   IpMacMap_t::iterator ret;
-  ret = m_arpTable.find (ip);
+  ret = SdnController::m_arpTable.find (ip);
   if (ret != m_arpTable.end ())
     {
       NS_LOG_INFO ("Found ARP entry: " << ip << " - " << ret->second);

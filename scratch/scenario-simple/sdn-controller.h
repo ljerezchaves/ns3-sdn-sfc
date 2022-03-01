@@ -60,6 +60,13 @@ public:
   void NotifyVnfAttach (Ptr<OFSwitch13Device> switchDev, uint32_t portNo,
                         Ipv4Address ipv4Address, Mac48Address macAddress);
 
+  /**
+   * Perform an ARP resolution
+   * \param ip The Ipv4Address to search.
+   * \return The MAC address for this ip.
+   */
+  static Mac48Address GetArpEntry (Ipv4Address ip);
+
 protected:
   /** Destructor implementation */
   virtual void DoDispose ();
@@ -102,20 +109,13 @@ private:
    * \param ipAddr The IPv4 address.
    * \param macAddr The MAC address.
    */
-  void SaveArpEntry (Ipv4Address ipAddr, Mac48Address macAddr);
-
-  /**
-   * Perform an ARP resolution
-   * \param ip The Ipv4Address to search.
-   * \return The MAC address for this ip.
-   */
-  Mac48Address GetArpEntry (Ipv4Address ip);
+  static void SaveArpEntry (Ipv4Address ipAddr, Mac48Address macAddr);
 
   Ptr<SdnNetwork>     m_network;    //!< SDN network pointer.
 
   /** Map saving <IPv4 address / MAC address> */
   typedef std::map<Ipv4Address, Mac48Address> IpMacMap_t;
-  IpMacMap_t m_arpTable;          //!< ARP resolution table.
+  static IpMacMap_t m_arpTable;     //!< ARP resolution table.
 };
 
 #endif /* SDN_CONTROLLER_H */

@@ -18,9 +18,8 @@
  * Author: Luciano Jerez Chaves <luciano@lrc.ic.unicamp.br>
  */
 
-#include <iomanip>
-#include <iostream>
 #include "vnf-info.h"
+#include "vnf-app.h"
 
 using namespace std;
 
@@ -35,7 +34,8 @@ VnfInfo::VnfInfoMap_t VnfInfo::m_vnfInfoById;
 VnfInfo::VnfInfo (uint32_t vnfId)
   : m_vnfId (vnfId),
   m_switchScaling (1),
-  m_serverScaling (1)
+  m_serverScaling (1),
+  m_activeCopyIdx (0)
 {
   NS_LOG_FUNCTION (this);
 
@@ -123,6 +123,14 @@ VnfInfo::GetSwitchScaling (void) const
   return m_switchScaling;
 }
 
+int
+VnfInfo::GetActiveCopyIdx (void) const
+{
+  NS_LOG_FUNCTION (this);
+
+  return m_activeCopyIdx;
+}
+
 void
 VnfInfo::SetServerScaling (double value)
 {
@@ -145,6 +153,14 @@ VnfInfo::SetSwitchScaling (double value)
     {
       app->SetAttribute ("PktSizeScalingFactor", DoubleValue (value));
     }
+}
+
+void
+VnfInfo::SetActiveCopyIdx (int value)
+{
+  NS_LOG_FUNCTION (this);
+
+  m_activeCopyIdx = value;
 }
 
 void

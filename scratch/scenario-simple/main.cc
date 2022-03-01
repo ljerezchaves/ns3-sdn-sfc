@@ -20,7 +20,6 @@
 #include <ns3/internet-module.h>
 #include <ns3/ofswitch13-module.h>
 #include "sdn-network.h"
-#include "sdn-controller.h"
 
 using namespace ns3;
 

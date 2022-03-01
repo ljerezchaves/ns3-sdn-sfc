@@ -14,8 +14,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <ns3/internet-module.h>
 #include "vnf-app.h"
-#include "sdn-controller.h"
+
+#undef NS_LOG_APPEND_CONTEXT
+#define NS_LOG_APPEND_CONTEXT                  \
+  if (m_vnfId)                                 \
+    {                                          \
+      std::clog << "[VNF " << m_vnfId << "] "; \
+    }
 
 namespace ns3 {
 
@@ -41,21 +48,21 @@ VnfApp::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<VnfApp> ()
 
-    .AddAttribute ("LocalIpAddress", "Local IPv4 address.",
+    .AddAttribute ("VnfId", "VNF identification.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
+                   UintegerValue (0),
+                   MakeUintegerAccessor (&VnfApp::m_vnfId),
+                   MakeUintegerChecker<uint32_t> ())
+
+    .AddAttribute ("Ipv4Address", "Local IPv4 address.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    Ipv4AddressValue (Ipv4Address ()),
-                   MakeIpv4AddressAccessor (&VnfApp::m_localIpAddress),
+                   MakeIpv4AddressAccessor (&VnfApp::m_ipv4Address),
                    MakeIpv4AddressChecker ())
-    .AddAttribute ("LocalUdpPort", "Local UDP port.",
-                   UintegerValue (10000),
-                   MakeUintegerAccessor (&VnfApp::m_localUdpPort),
-                   MakeUintegerChecker<uint16_t> ())
-    .AddAttribute ("NextIpAddress", "Next IPv4 address.",
-                   Ipv4AddressValue (Ipv4Address ()),
-                   MakeIpv4AddressAccessor (&VnfApp::m_nextIpAddress),
-                   MakeIpv4AddressChecker ())
-    .AddAttribute ("NextUdpPort", "Next UDP port.",
-                   UintegerValue (10000),
-                   MakeUintegerAccessor (&VnfApp::m_nextUdpPort),
+    .AddAttribute ("UdpPort", "Local UDP port.",
+                   TypeId::ATTR_GET,
+                   UintegerValue (11111),
+                   MakeUintegerAccessor (&VnfApp::m_udpPort),
                    MakeUintegerChecker<uint16_t> ())
 
     .AddAttribute ("PktSizeScalingFactor",
@@ -68,35 +75,19 @@ VnfApp::GetTypeId (void)
 }
 
 void
-VnfApp::SetLocalIpAddress (Ipv4Address address)
+VnfApp::SetIpv4Address (Ipv4Address address)
 {
   NS_LOG_FUNCTION (this << address);
 
-  m_localIpAddress = address;
+  m_ipv4Address = address;
 }
 
 void
-VnfApp::SetLocalUdpPort (uint16_t port)
+VnfApp::SetUdpPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 
-  m_localUdpPort = port;
-}
-
-void
-VnfApp::SetNextIpAddress (Ipv4Address address)
-{
-  NS_LOG_FUNCTION (this << address);
-
-  m_nextIpAddress = address;
-}
-
-void
-VnfApp::SetNextUdpPort (uint16_t port)
-{
-  NS_LOG_FUNCTION (this << port);
-
-  m_nextUdpPort = port;
+  m_udpPort = port;
 }
 
 void
@@ -125,14 +116,14 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
 
   NS_LOG_INFO ("VNF app will send a packet of " << outPacket->GetSize () << " bytes.");
 
-  // Insert new UDP, IP and Ethernet headers.
-  Mac48Address nextMacAddr = SdnController::GetArpEntry (m_nextIpAddress);
-  InsertHeaders (outPacket, m_localIpAddress, m_nextIpAddress, m_localUdpPort,
-                 m_nextUdpPort, Mac48Address::ConvertFrom (dstMac), nextMacAddr);
+  // Insert new UDP, IP and Ethernet headers. FIXME:
+  // Mac48Address nextMacAddr = SdnController::GetArpEntry (m_nextIpAddress);
+  // InsertHeaders (outPacket, m_ipv4Address, m_nextIpAddress, m_udpPort,
+  //                m_nextUdpPort, Mac48Address::ConvertFrom (dstMac), nextMacAddr);
 
-  // // Send the new packet to the OpenFlow switch over the logical port.
-  m_logicalPort->Receive (outPacket, Ipv4L3Protocol::PROT_NUMBER,
-                          dstMac, srcMac, NetDevice::PACKET_HOST);
+  // // // Send the new packet to the OpenFlow switch over the logical port.
+  // m_logicalPort->Receive (outPacket, Ipv4L3Protocol::PROT_NUMBER,
+  //                         dstMac, srcMac, NetDevice::PACKET_HOST);
 
   return true;
 }
@@ -182,8 +173,8 @@ VnfApp::RemoveHeaders (Ptr<Packet> packet)
       NS_LOG_WARN ("Bad checksum.");
     }
 
-  NS_ASSERT_MSG (ipHeader.GetDestination () == m_localIpAddress, "Inconsistent IP address.");
-  NS_ASSERT_MSG (udpHeader.GetDestinationPort () == m_localUdpPort, "Inconsistente UDP port.");
+  NS_ASSERT_MSG (ipHeader.GetDestination () == m_ipv4Address, "Inconsistent IP address.");
+  NS_ASSERT_MSG (udpHeader.GetDestinationPort () == m_udpPort, "Inconsistente UDP port.");
 }
 
 void

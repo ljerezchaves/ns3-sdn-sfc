@@ -19,7 +19,6 @@
 
 #include <ns3/core-module.h>
 #include <ns3/network-module.h>
-#include <ns3/internet-module.h>
 #include <ns3/virtual-net-device-module.h>
 
 namespace ns3 {
@@ -43,25 +42,13 @@ public:
    * Set the local IPv4 address.
    * \param address The address.
    */
-  void SetLocalIpAddress (Ipv4Address address);
+  void SetIpv4Address (Ipv4Address address);
 
   /**
    * Set the local UDP port number.
    * \param port The port number.
    */
-  void SetLocalUdpPort (uint16_t port);
-
-  /**
-   * Set the next IPv4 address.
-   * \param address The address.
-   */
-  void SetNextIpAddress (Ipv4Address address);
-
-  /**
-   * Set the next UDP port number.
-   * \param port The port number.
-   */
-  void SetNextUdpPort (uint16_t port);
+  void SetUdpPort (uint16_t port);
 
   /**
    * Set the virtual net device and configure the send callback.
@@ -106,13 +93,11 @@ protected:
   void InsertHeaders (Ptr<Packet> packet, Ipv4Address srcIp, Ipv4Address dstIp,
   uint16_t srcPort, uint16_t dstPort, Mac48Address srcMac, Mac48Address dstMac);
 
-
-
 private:
-  Ipv4Address           m_localIpAddress;   //!< Local IPv4 address.
-  uint16_t              m_localUdpPort;     //!< Local UDP port.
-  Ipv4Address           m_nextIpAddress;    //!< Next IPv4 address.
-  uint16_t              m_nextUdpPort;      //!< Next UDP port.
+  uint32_t              m_vnfId;            //!< VNF ID.
+
+  Ipv4Address           m_ipv4Address;      //!< Local IPv4 address.
+  uint16_t              m_udpPort;          //!< Local UDP port.
 
   double                m_pktSizeScale;     //!< Packet size scaling factor.
   EventId               m_sendEvent;        //!< SendPacket event.

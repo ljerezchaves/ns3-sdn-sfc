@@ -24,11 +24,10 @@
 #include <ns3/core-module.h>
 #include <ns3/network-module.h>
 #include <ns3/ofswitch13-module.h>
-#include "vnf-app.h"
 
 namespace ns3 {
 
-class RoutingInfo;
+class VnfApp;
 
 /**
  * Metadata associated to a VNF.
@@ -51,6 +50,7 @@ public:
 
   /**
    * \name Private member accessors for VNF information.
+   * \param value The value to set.
    * \return The requested information.
    */
   //\{
@@ -61,11 +61,20 @@ public:
   Mac48Address  GetSwitchMacAddr  (void) const;
   double        GetServerScaling  (void) const;
   double        GetSwitchScaling  (void) const;
+  int           GetActiveCopyIdx  (void) const;
 
   void          SetServerScaling  (double value);
   void          SetSwitchScaling  (double value);
+  void          SetActiveCopyIdx  (int value);
   //\}
 
+  /**
+   * Notify about a new copy of this VNF created in the network.
+   * \param serverApp The VNF app on the server switch.
+   * \param serverDevice The server switch node.
+   * \param switchApp The VNF app on the network switch.
+   * \param switchDevice The network switch node.
+   */
   void NewVnfCopy (Ptr<VnfApp> serverApp, Ptr<OFSwitch13Device> serverDevice,
                    Ptr<VnfApp> switchApp, Ptr<OFSwitch13Device> switchDevice);
 
@@ -96,6 +105,7 @@ private:
   VnfAppList_t              m_serverAppList; //!< List of apps on servers nodes
   OFSwitch13DeviceContainer m_switchDevList; //!< List of switch devices
   OFSwitch13DeviceContainer m_serverDevList; //!< List of server devices
+  int                       m_activeCopyIdx; //!< Index of the active copy
 
   /**
    * Register the VNF information in global map for further usage.

@@ -15,6 +15,7 @@
  */
 
 #include "sink-app.h"
+#include "sfc-tag.h"
 
 namespace ns3 {
 
@@ -96,8 +97,12 @@ SinkApp::ReadPacket (Ptr<Socket> socket)
   NS_LOG_FUNCTION (this << socket);
 
   Ptr<Packet> packet = socket->Recv ();
-  uint32_t bytes = packet->GetSize ();
-  NS_LOG_INFO ("Sink app received a packet of " << bytes << " bytes.");
+
+  SfcTag sfcTag;
+  packet->PeekPacketTag (sfcTag);
+  Time delay = Simulator::Now () - sfcTag.GetTimestamp ();
+  NS_LOG_INFO ("Sink app received a packet of " << packet->GetSize () <<
+               " bytes with end-to-end delay of " << delay.As (Time::MS));
 }
 
 } // namespace ns3

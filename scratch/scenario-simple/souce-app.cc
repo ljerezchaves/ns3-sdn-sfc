@@ -15,6 +15,8 @@
  */
 
 #include "source-app.h"
+#include "sfc-tag.h"
+#include "vnf-info.h"
 
 namespace ns3 {
 
@@ -44,13 +46,13 @@ SourceApp::GetTypeId (void)
                    UintegerValue (10000),
                    MakeUintegerAccessor (&SourceApp::m_localUdpPort),
                    MakeUintegerChecker<uint16_t> ())
-    .AddAttribute ("NextIpAddress", "Next IPv4 address.",
+    .AddAttribute ("FinalIpAddress", "Final IPv4 address.",
                    Ipv4AddressValue (),
-                   MakeIpv4AddressAccessor (&SourceApp::m_nextIpAddress),
+                   MakeIpv4AddressAccessor (&SourceApp::m_finalIpAddress),
                    MakeIpv4AddressChecker ())
-    .AddAttribute ("NextUdpPort", "Next UDP port.",
+    .AddAttribute ("FinalUdpPort", "Final UDP port.",
                    UintegerValue (10000),
-                   MakeUintegerAccessor (&SourceApp::m_nextUdpPort),
+                   MakeUintegerAccessor (&SourceApp::m_finalUdpPort),
                    MakeUintegerChecker<uint16_t> ())
 
     // These attributes must be configured for the desired traffic pattern.
@@ -77,19 +79,28 @@ SourceApp::SetLocalUdpPort (uint16_t port)
 }
 
 void
-SourceApp::SetNextIpAddress (Ipv4Address address)
+SourceApp::SetFinalIpAddress (Ipv4Address address)
 {
   NS_LOG_FUNCTION (this << address);
 
-  m_nextIpAddress = address;
+  m_finalIpAddress = address;
 }
 
 void
-SourceApp::SetNextUdpPort (uint16_t port)
+SourceApp::SetFinalUdpPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 
-  m_nextUdpPort = port;
+  m_finalUdpPort = port;
+}
+
+void
+SourceApp::SetVnfList (std::vector<uint8_t> vnfList)
+{
+  NS_LOG_FUNCTION (this << vnfList);
+  NS_ASSERT_MSG (vnfList.size () <= 8, "Maximum of 8 VNFs allowed in SFC.");
+
+  m_vnfList = vnfList;
 }
 
 void
@@ -107,12 +118,9 @@ SourceApp::StartApplication (void)
   NS_LOG_FUNCTION (this);
 
   NS_LOG_INFO ("Opening the TX UDP socket.");
-  InetSocketAddress localAddress (Ipv4Address::GetAny (), m_localUdpPort);
-  InetSocketAddress nextAddress (m_nextIpAddress, m_nextUdpPort);
   TypeId udpFactory = TypeId::LookupByName ("ns3::UdpSocketFactory");
   m_socket = Socket::CreateSocket (GetNode (), udpFactory);
-  m_socket->Bind (localAddress);
-  m_socket->Connect (nextAddress);
+  m_socket->Bind (InetSocketAddress (Ipv4Address::GetAny (), m_localUdpPort));
   m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket>> ());
 
   // Schedule the first packet transmission.
@@ -144,10 +152,17 @@ SourceApp::SendPacket (uint32_t size)
   NS_LOG_FUNCTION (this << size);
 
   Ptr<Packet> packet = Create<Packet> (size);
-  int bytes = m_socket->Send (packet);
+
+  // Create the SFC packet tag and get the next address.
+  SfcTag sfcTag (m_vnfList, InetSocketAddress (m_finalIpAddress, m_finalUdpPort));
+  InetSocketAddress nextAddress (sfcTag.GetNextAddress (true));
+  packet->AddPacketTag (sfcTag);
+
+  int bytes = m_socket->SendTo (packet, 0, nextAddress);
   if (bytes == static_cast<int> (packet->GetSize ()))
     {
-      NS_LOG_INFO ("Source app transmitted a packet of " << bytes << " bytes.");
+      NS_LOG_INFO ("Source app transmitted a packet of " << bytes << " bytes to IP "
+                   << nextAddress.GetIpv4 () << " port " << nextAddress.GetPort ());
     }
 
   // Schedule the next packet transmission.

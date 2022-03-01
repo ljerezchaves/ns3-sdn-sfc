@@ -97,7 +97,7 @@ SinkApp::ReadPacket (Ptr<Socket> socket)
 
   Ptr<Packet> packet = socket->Recv ();
   uint32_t bytes = packet->GetSize ();
-  NS_LOG_DEBUG ("Sink app received a packet of " << bytes << " bytes.");
+  NS_LOG_INFO ("Sink app received a packet of " << bytes << " bytes.");
 }
 
 } // namespace ns3

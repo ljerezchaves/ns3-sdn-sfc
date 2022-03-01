@@ -147,7 +147,7 @@ SourceApp::SendPacket (uint32_t size)
   int bytes = m_socket->Send (packet);
   if (bytes == static_cast<int> (packet->GetSize ()))
     {
-      NS_LOG_DEBUG ("Source app transmitted a packet of " << bytes << " bytes.");
+      NS_LOG_INFO ("Source app transmitted a packet of " << bytes << " bytes.");
     }
 
   // Schedule the next packet transmission.

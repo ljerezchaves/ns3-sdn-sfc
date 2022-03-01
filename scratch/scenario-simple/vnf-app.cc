@@ -16,6 +16,8 @@
 
 #include <ns3/internet-module.h>
 #include "vnf-app.h"
+#include "sfc-tag.h"
+#include "sdn-controller.h"
 
 #undef NS_LOG_APPEND_CONTEXT
 #define NS_LOG_APPEND_CONTEXT                  \
@@ -60,7 +62,7 @@ VnfApp::GetTypeId (void)
                    MakeIpv4AddressAccessor (&VnfApp::m_ipv4Address),
                    MakeIpv4AddressChecker ())
     .AddAttribute ("UdpPort", "Local UDP port.",
-                   TypeId::ATTR_GET,
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (11111),
                    MakeUintegerAccessor (&VnfApp::m_udpPort),
                    MakeUintegerChecker<uint16_t> ())
@@ -114,16 +116,22 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
   int newPacketSize = inPacket->GetSize () * m_pktSizeScale;
   Ptr<Packet> outPacket = Create<Packet> (newPacketSize);
 
-  NS_LOG_INFO ("VNF app will send a packet of " << outPacket->GetSize () << " bytes.");
+  SfcTag sfcTag;
+  inPacket->PeekPacketTag (sfcTag);
+  InetSocketAddress nextAddress (sfcTag.GetNextAddress (true));
+  outPacket->AddPacketTag (sfcTag);
 
-  // Insert new UDP, IP and Ethernet headers. FIXME:
-  // Mac48Address nextMacAddr = SdnController::GetArpEntry (m_nextIpAddress);
-  // InsertHeaders (outPacket, m_ipv4Address, m_nextIpAddress, m_udpPort,
-  //                m_nextUdpPort, Mac48Address::ConvertFrom (dstMac), nextMacAddr);
+  NS_LOG_INFO ("VNF app will send a packet of " << outPacket->GetSize () << " bytes to IP "
+               << nextAddress.GetIpv4 () << " port " << nextAddress.GetPort ());
 
-  // // // Send the new packet to the OpenFlow switch over the logical port.
-  // m_logicalPort->Receive (outPacket, Ipv4L3Protocol::PROT_NUMBER,
-  //                         dstMac, srcMac, NetDevice::PACKET_HOST);
+  // Insert new UDP, IP and Ethernet headers.
+  Mac48Address nextMacAddr = SdnController::GetArpEntry (nextAddress.GetIpv4 ());
+  InsertHeaders (outPacket, m_ipv4Address, nextAddress.GetIpv4 (), m_udpPort,
+                 nextAddress.GetPort (), Mac48Address::ConvertFrom (dstMac), nextMacAddr);
+
+  // // Send the new packet to the OpenFlow switch over the logical port.
+  m_logicalPort->Receive (outPacket, Ipv4L3Protocol::PROT_NUMBER,
+                          dstMac, srcMac, NetDevice::PACKET_HOST);
 
   return true;
 }

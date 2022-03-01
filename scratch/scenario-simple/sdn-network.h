@@ -23,6 +23,7 @@
 namespace ns3 {
 
 class VnfApp;
+class VnfInfo;
 
 /** The OpenFlow network. */
 class SdnNetwork : public Object
@@ -66,17 +67,16 @@ protected:
   void ConfigureApplications (void);
 
   /**
-   * Install a VNF application on the switch node, connecting it to the switch
-   * device via a new VirtualNetDevice acting as an OpenFlow logical port.
-   * \param switchNode The OpenFlow switch node.
-   * \param switchDevice The OpenFlow switch device.
-   * \param application The VNF application.
-   * \param ipv4Address The VNF IPv4 address.
-   * \param macAddress The VNF MAC address.
+   * Install a VNF copy on the switch and server nodes.
+   * \param switchNode The network switch node
+   * \param switchDevice The network switch device
+   * \param serverNode The server switch node
+   * \param serverDevice The server switch device
+   * \param vnfInfo The VNF information
    */
-  void InstallVnf (Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
-                   Ptr<VnfApp> application, Ipv4Address ipv4Address,
-                   Mac48Address macAddress);
+  void InstallVnfCopy (Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
+                       Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
+                       Ptr<VnfInfo> vnfInfo);
 
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.

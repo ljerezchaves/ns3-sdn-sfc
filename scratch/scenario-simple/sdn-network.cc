@@ -170,29 +170,14 @@ SdnNetwork::ConfigureFunctions (void)
 {
   NS_LOG_FUNCTION (this);
 
-  // Create and configure the VNF information and application factories.
-  Ptr<VnfInfo> vnfInfo1 = CreateObject<VnfInfo> (1);
-  vnfInfo1->SetSwitchScaling (1.5);
-  vnfInfo1->SetServerScaling (1/1.5);
+  // Create and configure the VNF information.
+  Ptr<VnfInfo> vnfInfo = CreateObject<VnfInfo> (1);
+  vnfInfo->SetSwitchScaling (1.5);
+  vnfInfo->SetServerScaling (1/1.5);
 
-  ObjectFactory vnfSwitchFactory;
-  vnfSwitchFactory.SetTypeId (VnfApp::GetTypeId ());
-  vnfSwitchFactory.Set ("VnfId", UintegerValue (vnfInfo1->GetVnfId ()));
-  vnfSwitchFactory.Set ("Ipv4Address", Ipv4AddressValue (vnfInfo1->GetSwitchIpAddr ()));
-  vnfSwitchFactory.Set ("PktSizeScalingFactor", DoubleValue (vnfInfo1->GetSwitchScaling ()));
-
-  ObjectFactory vnfServerFactory;
-  vnfServerFactory.SetTypeId (VnfApp::GetTypeId ());
-  vnfServerFactory.Set ("VnfId", UintegerValue (vnfInfo1->GetVnfId ()));
-  vnfServerFactory.Set ("Ipv4Address", Ipv4AddressValue (vnfInfo1->GetServerIpAddr ()));
-  vnfServerFactory.Set ("PktSizeScalingFactor", DoubleValue (vnfInfo1->GetServerScaling ()));
-
-  NS_LOG_UNCOND ("VNF1: ip " << vnfInfo1->GetServerIpAddr () << " " << vnfInfo1->GetSwitchIpAddr ());
-
-  // Notify the controller about this new VNF
-  // m_controllerApp->
-
-  // Install a copy of this VNF in all switches
+  // Install a copy of this VNF in the switch and server nodes
+  m_controllerApp->NotifyNewVnf (vnfInfo);
+  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode, m_serverDevice, vnfInfo);
 }
 
 void
@@ -235,24 +220,43 @@ SdnNetwork::ConfigureApplications (void)
 }
 
 void
-SdnNetwork::InstallVnf (
+SdnNetwork::InstallVnfCopy (
   Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
-  Ptr<VnfApp> application, Ipv4Address ipv4Address, Mac48Address macAddress)
+  Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
+  Ptr<VnfInfo> vnfInfo)
 {
-  NS_LOG_FUNCTION (this << switchDevice << application << ipv4Address << macAddress);
+  NS_LOG_FUNCTION (this << switchNode << switchDevice << serverNode << serverDevice << vnfInfo);
 
+  // First, install the application on the network switch
   // Create the virtual net device to work as the logical port on the switch.
-  Ptr<VirtualNetDevice> virtualDevice = CreateObject<VirtualNetDevice> ();
-  virtualDevice->SetAddress (macAddress);
-  Ptr<OFSwitch13Port> logicalPort = switchDevice->AddSwitchPort (virtualDevice);
-  m_portDevices.Add (virtualDevice);
+  Ptr<VirtualNetDevice> virtualDevSwitch = CreateObject<VirtualNetDevice> ();
+  virtualDevSwitch->SetAddress (vnfInfo->GetSwitchMacAddr ());
+  Ptr<OFSwitch13Port> logicalPortSwitch = switchDevice->AddSwitchPort (virtualDevSwitch);
+  m_portDevices.Add (virtualDevSwitch);
 
   // Configure the VNF application and notify the controller.
-  application->SetVirtualDevice (virtualDevice);
+  Ptr<VnfApp> switchApp = vnfInfo->CreateSwitchApp ();
+  switchApp->SetVirtualDevice (virtualDevSwitch);
+  switchNode->AddApplication (switchApp);
   m_controllerApp->NotifyVnfAttach (
-    switchDevice, logicalPort->GetPortNo (), ipv4Address, macAddress);
+    switchDevice, logicalPortSwitch->GetPortNo (), vnfInfo->GetSwitchIpAddr (), vnfInfo->GetSwitchMacAddr ());
 
-  switchNode->AddApplication (application);
+  // Then, install the application on the server switch
+  // Create the virtual net device to work as the logical port on the switch.
+  Ptr<VirtualNetDevice> virtualDevServer = CreateObject<VirtualNetDevice> ();
+  virtualDevServer->SetAddress (vnfInfo->GetServerMacAddr ());
+  Ptr<OFSwitch13Port> logicalPortServer = serverDevice->AddSwitchPort (virtualDevServer);
+  m_portDevices.Add (virtualDevServer);
+
+  // Configure the VNF application and notify the controller.
+  Ptr<VnfApp> serverApp = vnfInfo->CreateServerApp ();
+  serverApp->SetVirtualDevice (virtualDevServer);
+  serverNode->AddApplication (serverApp);
+  m_controllerApp->NotifyVnfAttach (
+    serverDevice, logicalPortServer->GetPortNo (), vnfInfo->GetServerIpAddr (), vnfInfo->GetServerMacAddr ());
+
+  // Notify the VNF information about this new copy
+  vnfInfo->NewVnfCopy (serverApp, m_serverDevice, switchApp, m_switchDevice);
 }
 
 } // namespace ns3

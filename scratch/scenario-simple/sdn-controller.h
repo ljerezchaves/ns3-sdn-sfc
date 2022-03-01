@@ -22,6 +22,7 @@
 namespace ns3 {
 
 class SdnNetwork;
+class VnfInfo;
 
 /** The OpenFlow controller. */
 class SdnController : public OFSwitch13Controller
@@ -49,6 +50,8 @@ public:
    * \param hostDev The device created at the host node.
    */
   void NotifyHostAttach (Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev);
+
+  void NotifyNewVnf (Ptr<VnfInfo> vnfInfo);
 
   /**
    * Notify this controller of a new VNF connected to the OpenFlow network.

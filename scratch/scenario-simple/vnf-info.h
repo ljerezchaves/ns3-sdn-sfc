@@ -69,6 +69,15 @@ public:
   //\}
 
   /**
+   * Create a VNF application
+   * \return The created applivation
+   */
+  //\{
+  Ptr<VnfApp> CreateServerApp (void);
+  Ptr<VnfApp> CreateSwitchApp (void);
+  //\}
+
+  /**
    * Notify about a new copy of this VNF created in the network.
    * \param serverApp The VNF app on the server switch.
    * \param serverDevice The server switch node.
@@ -99,13 +108,19 @@ private:
   double          m_switchScaling;        //!< Scaling factor at the switch
   double          m_serverScaling;        //!< Scaling factor at the server
 
-  /** List of VNF applications */
+  ObjectFactory   m_serverFactory;        //!< Factory for server apps
+  ObjectFactory   m_switchFactory;        //!< Factory for switch apps
+
+  /** List of VNF copies */
   typedef std::vector<Ptr<VnfApp>> VnfAppList_t;
-  VnfAppList_t              m_switchAppList; //!< List of apps on switches nodes
-  VnfAppList_t              m_serverAppList; //!< List of apps on servers nodes
-  OFSwitch13DeviceContainer m_switchDevList; //!< List of switch devices
-  OFSwitch13DeviceContainer m_serverDevList; //!< List of server devices
-  int                       m_activeCopyIdx; //!< Index of the active copy
+  typedef std::vector<uint16_t> PortNoList_t;
+  VnfAppList_t              m_switchAppList;  //!< List of apps on switches nodes
+  VnfAppList_t              m_serverAppList;  //!< List of apps on servers nodes
+  OFSwitch13DeviceContainer m_switchDevList;  //!< List of switch devices
+  OFSwitch13DeviceContainer m_serverDevList;  //!< List of server devices
+  PortNoList_t              m_switchPortList; //!< List of ports on switch nodes
+  PortNoList_t              m_serverPortList; //!< List of ports on server nodes
+  int                       m_activeCopyIdx;  //!< Index of the active copy
 
   /**
    * Register the VNF information in global map for further usage.

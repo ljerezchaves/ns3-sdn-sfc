@@ -163,9 +163,9 @@ void ForceDefaults (void)
   Config::SetDefault ("ns3::VirtualNetDevice::Mtu", UintegerValue (3000));
 
   //
-  // OpenFlow switches with a single flow table in the pipeline.
+  // OpenFlow switches with two flow tables in the pipeline.
   //
-  Config::SetDefault ("ns3::OFSwitch13Device::PipelineTables", UintegerValue (1));
+  Config::SetDefault ("ns3::OFSwitch13Device::PipelineTables", UintegerValue (2));
 
   //
   // OpenFlow channel with dedicated P2P connections.

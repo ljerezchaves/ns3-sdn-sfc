@@ -48,6 +48,15 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   m_serverMacAddress = Mac48Address::Allocate ();
   m_switchMacAddress = Mac48Address::Allocate ();
 
+  // Configure the factories
+  m_switchFactory.SetTypeId (VnfApp::GetTypeId ());
+  m_switchFactory.Set ("VnfId", UintegerValue (vnfId));
+  m_switchFactory.Set ("Ipv4Address", Ipv4AddressValue (m_switchIpAddress));
+
+  m_serverFactory.SetTypeId (VnfApp::GetTypeId ());
+  m_serverFactory.Set ("VnfId", UintegerValue (vnfId));
+  m_serverFactory.Set ("Ipv4Address", Ipv4AddressValue (m_serverIpAddress));
+
   RegisterVnfInfo (Ptr<VnfInfo> (this));
 }
 
@@ -135,6 +144,7 @@ VnfInfo::SetServerScaling (double value)
   NS_LOG_FUNCTION (this << value);
 
   m_serverScaling = value;
+  m_serverFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
   for (auto &app : m_serverAppList)
     {
       app->SetAttribute ("PktSizeScalingFactor", DoubleValue (value));
@@ -147,6 +157,7 @@ VnfInfo::SetSwitchScaling (double value)
   NS_LOG_FUNCTION (this << value);
 
   m_switchScaling = value;
+  m_switchFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
   for (auto &app : m_switchAppList)
     {
       app->SetAttribute ("PktSizeScalingFactor", DoubleValue (value));
@@ -159,6 +170,22 @@ VnfInfo::SetActiveCopyIdx (int value)
   NS_LOG_FUNCTION (this);
 
   m_activeCopyIdx = value;
+}
+
+Ptr<VnfApp>
+VnfInfo::CreateServerApp (void)
+{
+  NS_LOG_FUNCTION (this);
+
+  return m_serverFactory.Create ()->GetObject<VnfApp> ();
+}
+
+Ptr<VnfApp>
+VnfInfo::CreateSwitchApp (void)
+{
+  NS_LOG_FUNCTION (this);
+
+  return m_switchFactory.Create ()->GetObject<VnfApp> ();
 }
 
 void

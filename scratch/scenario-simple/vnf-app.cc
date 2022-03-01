@@ -15,6 +15,7 @@
  */
 
 #include "vnf-app.h"
+#include "sdn-controller.h"
 
 namespace ns3 {
 
@@ -40,17 +41,21 @@ VnfApp::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<VnfApp> ()
 
-    .AddAttribute ("LocalAddress", "VNF IPv4 address.",
-                   AddressValue (),
-                   MakeAddressAccessor (&VnfApp::m_ipv4Address),
-                   MakeAddressChecker ())
-    .AddAttribute ("TargetAddress", "Destination socket address.",
-                   AddressValue (),
-                   MakeAddressAccessor (&VnfApp::m_targetAddress),
-                   MakeAddressChecker ())
-    .AddAttribute ("Port", "Local port.",
+    .AddAttribute ("LocalIpAddress", "Local IPv4 address.",
+                   Ipv4AddressValue (Ipv4Address ()),
+                   MakeIpv4AddressAccessor (&VnfApp::m_localIpAddress),
+                   MakeIpv4AddressChecker ())
+    .AddAttribute ("LocalUdpPort", "Local UDP port.",
                    UintegerValue (10000),
-                   MakeUintegerAccessor (&VnfApp::m_port),
+                   MakeUintegerAccessor (&VnfApp::m_localUdpPort),
+                   MakeUintegerChecker<uint16_t> ())
+    .AddAttribute ("NextIpAddress", "Next IPv4 address.",
+                   Ipv4AddressValue (Ipv4Address ()),
+                   MakeIpv4AddressAccessor (&VnfApp::m_nextIpAddress),
+                   MakeIpv4AddressChecker ())
+    .AddAttribute ("NextUdpPort", "Next UDP port.",
+                   UintegerValue (10000),
+                   MakeUintegerAccessor (&VnfApp::m_nextUdpPort),
                    MakeUintegerChecker<uint16_t> ())
 
     .AddAttribute ("PktSizeScalingFactor",
@@ -63,27 +68,35 @@ VnfApp::GetTypeId (void)
 }
 
 void
-VnfApp::SetTargetAddress (Address address)
+VnfApp::SetLocalIpAddress (Ipv4Address address)
 {
   NS_LOG_FUNCTION (this << address);
 
-  m_targetAddress = address;
+  m_localIpAddress = address;
 }
 
 void
-VnfApp::SetLocalAddress (Address address)
-{
-  NS_LOG_FUNCTION (this << address);
-
-  m_ipv4Address = address;
-}
-
-void
-VnfApp::SetLocalPort (uint16_t port)
+VnfApp::SetLocalUdpPort (uint16_t port)
 {
   NS_LOG_FUNCTION (this << port);
 
-  m_port = port;
+  m_localUdpPort = port;
+}
+
+void
+VnfApp::SetNextIpAddress (Ipv4Address address)
+{
+  NS_LOG_FUNCTION (this << address);
+
+  m_nextIpAddress = address;
+}
+
+void
+VnfApp::SetNextUdpPort (uint16_t port)
+{
+  NS_LOG_FUNCTION (this << port);
+
+  m_nextUdpPort = port;
 }
 
 void
@@ -96,40 +109,30 @@ VnfApp::SetVirtualDevice (Ptr<VirtualNetDevice> device)
 }
 
 bool
-VnfApp::ProcessPacket (Ptr<Packet> packet, const Address& source,
-                       const Address& dest, uint16_t protocolNo)
+VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
+                       const Address& dstMac, uint16_t protocolNo)
 {
-  NS_LOG_FUNCTION (this << packet << source << dest << protocolNo);
+  NS_LOG_FUNCTION (this << inPacket << srcMac << dstMac << protocolNo);
 
-  // The packet got here with IP and UDP headers. Let's remove them first.
-  Ipv4Header ipHeader;
-  packet->RemoveHeader (ipHeader);
-  NS_LOG_DEBUG (ipHeader);
+  // The packet got here with the IP and UDP headers. Let's remove them first.
+  RemoveHeaders (inPacket);
 
-  UdpHeader udpHeader;
-  packet->RemoveHeader (udpHeader);
-  NS_LOG_DEBUG (udpHeader);
+  NS_LOG_INFO ("VNF app received a packet of " << inPacket->GetSize () << " bytes.");
 
-  NS_LOG_UNCOND ("Got HERE!!!!");
+  // Create the new packet with adjusted size.
+  int newPacketSize = inPacket->GetSize () * m_pktSizeScale;
+  Ptr<Packet> outPacket = Create<Packet> (newPacketSize);
 
-  // // Create the new packet with adjusted size.
-  // int newPacketSize = packet->GetSize () * m_pktSizeScale;
-  // Ptr<Packet> newPacket = Create<Packet> (newPacketSize);
+  NS_LOG_INFO ("VNF app will send a packet of " << outPacket->GetSize () << " bytes.");
 
-
-  // // Encapsulating the packet withing UDP, IP and Ethernet.
-  // UdpHeader newUdpHeader;
-  // newUdpHeader.SetSourcePort (m_port);
-  // newUdpHeader.SetDestinationPort (m_port); // FIXME
-
-
-  // // ipHeader.SetDestination ();
-
-
+  // Insert new UDP, IP and Ethernet headers.
+  Mac48Address nextMacAddr = SdnController::GetArpEntry (m_nextIpAddress);
+  InsertHeaders (outPacket, m_localIpAddress, m_nextIpAddress, m_localUdpPort,
+                 m_nextUdpPort, Mac48Address::ConvertFrom (dstMac), nextMacAddr);
 
   // // Send the new packet to the OpenFlow switch over the logical port.
-  // m_logicalPort->Receive (newPacket, Ipv4L3Protocol::PROT_NUMBER, Mac48Address (),
-  //                         Mac48Address (), NetDevice::PACKET_HOST);
+  m_logicalPort->Receive (outPacket, Ipv4L3Protocol::PROT_NUMBER,
+                          dstMac, srcMac, NetDevice::PACKET_HOST);
 
   return true;
 }
@@ -141,6 +144,107 @@ VnfApp::DoDispose (void)
 
   m_logicalPort = 0;
   Application::DoDispose ();
+}
+
+void
+VnfApp::RemoveHeaders (Ptr<Packet> packet)
+{
+  NS_LOG_FUNCTION (this << packet);
+
+  // Remove the IPv4 header.
+  Ipv4Header ipHeader;
+  if (Node::ChecksumEnabled ())
+    {
+      ipHeader.EnableChecksum ();
+    }
+  packet->RemoveHeader (ipHeader);
+  if (ipHeader.GetPayloadSize () < packet->GetSize ())
+    {
+      // Trim any residual frame padding from underlying devices.
+      packet->RemoveAtEnd (packet->GetSize () - ipHeader.GetPayloadSize ());
+    }
+  if (!ipHeader.IsChecksumOk ())
+    {
+      NS_LOG_WARN ("Bad checksum.");
+    }
+
+  // Remove the UDP header.
+  UdpHeader udpHeader;
+  if (Node::ChecksumEnabled ())
+    {
+      udpHeader.EnableChecksums ();
+    }
+  udpHeader.InitializeChecksum (
+    ipHeader.GetSource (), ipHeader.GetDestination (), UdpL4Protocol::PROT_NUMBER);
+  packet->RemoveHeader (udpHeader);
+  if (!udpHeader.IsChecksumOk ())
+    {
+      NS_LOG_WARN ("Bad checksum.");
+    }
+
+  NS_ASSERT_MSG (ipHeader.GetDestination () == m_localIpAddress, "Inconsistent IP address.");
+  NS_ASSERT_MSG (udpHeader.GetDestinationPort () == m_localUdpPort, "Inconsistente UDP port.");
+}
+
+void
+VnfApp::InsertHeaders (
+  Ptr<Packet> packet, Ipv4Address srcIp, Ipv4Address dstIp, uint16_t srcPort,
+  uint16_t dstPort, Mac48Address srcMac, Mac48Address dstMac)
+{
+  NS_LOG_FUNCTION (this << packet << srcIp << dstIp << srcPort << dstPort);
+
+  // Insert the UDP header
+  UdpHeader udpHeader;
+  if (Node::ChecksumEnabled ())
+    {
+      udpHeader.EnableChecksums ();
+      udpHeader.InitializeChecksum (srcIp, dstIp, UdpL4Protocol::PROT_NUMBER);
+    }
+  udpHeader.SetDestinationPort (dstPort);
+  udpHeader.SetSourcePort (srcPort);
+  packet->AddHeader (udpHeader);
+
+  // Insert the IP header
+  Ipv4Header ipHeader;
+  if (Node::ChecksumEnabled ())
+    {
+      ipHeader.EnableChecksum ();
+    }
+  ipHeader.SetSource (srcIp);
+  ipHeader.SetDestination (dstIp);
+  ipHeader.SetProtocol (UdpL4Protocol::PROT_NUMBER);
+  ipHeader.SetPayloadSize (packet->GetSize ());
+  ipHeader.SetTtl (32);
+  ipHeader.SetTos (0);
+  ipHeader.SetDontFragment ();
+  ipHeader.SetIdentification (0);
+  packet->AddHeader (ipHeader);
+
+  // All Ethernet frames must carry a minimum payload of 46 bytes. We need to
+  // pad out if we don't have enough bytes. These must be real bytes since they
+  // will be written to pcap files and compared in regression trace files.
+  if (packet->GetSize () < 46)
+    {
+      uint8_t buffer[46];
+      memset (buffer, 0, 46);
+      Ptr<Packet> padd = Create<Packet> (buffer, 46 - packet->GetSize ());
+      packet->AddAtEnd (padd);
+    }
+
+  // Insert the Ethernet header and trailer
+  EthernetHeader header (false);
+  header.SetSource (srcMac);
+  header.SetDestination (dstMac);
+  header.SetLengthType (Ipv4L3Protocol::PROT_NUMBER);
+  packet->AddHeader (header);
+
+  EthernetTrailer trailer;
+  if (Node::ChecksumEnabled ())
+    {
+      trailer.EnableFcs (true);
+    }
+  trailer.CalcFcs (packet);
+  packet->AddTrailer (trailer);
 }
 
 } // namespace ns3

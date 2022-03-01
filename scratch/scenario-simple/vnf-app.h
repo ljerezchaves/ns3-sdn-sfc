@@ -40,22 +40,28 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the destination address.
+   * Set the local IPv4 address.
    * \param address The address.
    */
-  void SetTargetAddress (Address address);
+  void SetLocalIpAddress (Ipv4Address address);
 
   /**
-   * Set the local address.
-   * \param address The address.
-   */
-  void SetLocalAddress (Address address);
-
-  /**
-   * Set the local port number.
+   * Set the local UDP port number.
    * \param port The port number.
    */
-  void SetLocalPort (uint16_t port);
+  void SetLocalUdpPort (uint16_t port);
+
+  /**
+   * Set the next IPv4 address.
+   * \param address The address.
+   */
+  void SetNextIpAddress (Ipv4Address address);
+
+  /**
+   * Set the next UDP port number.
+   * \param port The port number.
+   */
+  void SetNextUdpPort (uint16_t port);
 
   /**
    * Set the virtual net device and configure the send callback.
@@ -68,28 +74,40 @@ public:
    * implementing the OpenFlow logical port. It is called when the OpenFlow
    * switch sends a packet out over the logical port. The logical port
    * callbacks here, and we must process the packet to send it back.
-   * \param packet The packet received from the logical port.
-   * \param source Ethernet source address.
-   * \param dest Ethernet destination address.
+   * \param inPacket The packet received from the logical port.
+   * \param srcMac Ethernet source address.
+   * \param dstMac Ethernet destination address.
    * \param protocolNo The type of payload contained in this packet.
    * \return Whether the operation succeeded.
    */
-  bool ProcessPacket (Ptr<Packet> packet, const Address& source,
+  bool ProcessPacket (Ptr<Packet> inPacket, const Address& source,
                       const Address& dest, uint16_t protocolNo);
 
 protected:
   /** Destructor implementation */
   virtual void DoDispose (void);
 
+  /**
+   * Remove the IPv4 and UDP headers from incoming packet.
+   * \param packet The incoming packet
+   */
+  void RemoveHeaders (Ptr<Packet> packet);
+
+  void InsertHeaders (Ptr<Packet> packet, Ipv4Address srcIp, Ipv4Address dstIp,
+  uint16_t srcPort, uint16_t dstPort, Mac48Address srcMac, Mac48Address dstMac);
+
+
+
 private:
-  uint16_t              m_port;           //!< Local port.
-  Address               m_targetAddress;  //!< Destination address.
-  Address               m_ipv4Address;   //!< Local address.
+  Ipv4Address           m_localIpAddress;   //!< Local IPv4 address.
+  uint16_t              m_localUdpPort;     //!< Local UDP port.
+  Ipv4Address           m_nextIpAddress;    //!< Next IPv4 address.
+  uint16_t              m_nextUdpPort;      //!< Next UDP port.
 
-  double                m_pktSizeScale;   //!< Packet size scaling factor.
-  EventId               m_sendEvent;      //!< SendPacket event.
+  double                m_pktSizeScale;     //!< Packet size scaling factor.
+  EventId               m_sendEvent;        //!< SendPacket event.
 
-  Ptr<VirtualNetDevice> m_logicalPort;    //!< OpenFlow logical port device.
+  Ptr<VirtualNetDevice> m_logicalPort;      //!< OpenFlow logical port device.
 };
 
 } // namespace ns3

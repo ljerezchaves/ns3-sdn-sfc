@@ -149,37 +149,44 @@ SdnNetwork::ConfigureApplications (void)
 {
   NS_LOG_FUNCTION (this);
 
-  // Configure the sink (last) application on host 2.
-  uint16_t port = 9999;
-  Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
-  sinkApp->SetLocalPort (port);
-  sinkApp->SetStartTime (Seconds (0));
-  m_host2Node->AddApplication (sinkApp);
-
-  // Configure the VNF (middle) application on the switch.
+  uint16_t sourceSinkPorts = 40001;
+  uint16_t vnfUdpPort = 40999;
   Ipv4Address vnfIpAddress ("10.10.0.1");
   Mac48Address vnfMacAddress = Mac48Address::Allocate ();
 
-  ObjectFactory vnfFactory;
-  vnfFactory.SetTypeId (VnfApp::GetTypeId ());
-  vnfFactory.Set ("LocalAddress", AddressValue (vnfIpAddress));
-  vnfFactory.Set ("TargetAddress", AddressValue (InetSocketAddress (m_host2Address, port)));
-  vnfFactory.Set ("Port", UintegerValue (port));
-  vnfFactory.Set ("PktSizeScalingFactor", DoubleValue (1.5));
+  // Chain from host 1 (10.0.0.1) to VNF 1 (10.10.0.1) to host 2 (10.0.0.2).
 
-  InstallVnf (m_switchDevice, vnfFactory.Create ()->GetObject<VnfApp> (), vnfIpAddress, vnfMacAddress);
-
-  // Configure the source (first) application on host 1.
+  // Configure the source application on host 1.
   Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
   sourceApp->SetStartTime (Seconds (1));
-  sourceApp->SetTargetAddress (InetSocketAddress (vnfIpAddress, port));
+  sourceApp->SetLocalUdpPort (sourceSinkPorts);
+  sourceApp->SetNextIpAddress (vnfIpAddress);
+  sourceApp->SetNextUdpPort (vnfUdpPort);
   m_host1Node->AddApplication (sourceApp);
+
+  // Configure the VNF application on the switch.
+  ObjectFactory vnfFactory;
+  vnfFactory.SetTypeId (VnfApp::GetTypeId ());
+  vnfFactory.Set ("LocalIpAddress", Ipv4AddressValue (vnfIpAddress));
+  vnfFactory.Set ("LocalUdpPort", UintegerValue (vnfUdpPort));
+  vnfFactory.Set ("NextIpAddress", Ipv4AddressValue (m_host2Address));
+  vnfFactory.Set ("NextUdpPort", UintegerValue (sourceSinkPorts));
+  vnfFactory.Set ("PktSizeScalingFactor", DoubleValue (1.5));
+
+  Ptr<VnfApp> vnfApp = vnfFactory.Create ()->GetObject<VnfApp> ();
+  InstallVnf (m_switchNode, m_switchDevice, vnfApp, vnfIpAddress, vnfMacAddress);
+
+  // Configure the sink  application on host 2.
+  Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
+  sinkApp->SetLocalUdpPort (sourceSinkPorts);
+  sinkApp->SetStartTime (Seconds (0));
+  m_host2Node->AddApplication (sinkApp);
 }
 
 void
 SdnNetwork::InstallVnf (
-  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfApp> application,
-  Ipv4Address ipv4Address, Mac48Address macAddress)
+  Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
+  Ptr<VnfApp> application, Ipv4Address ipv4Address, Mac48Address macAddress)
 {
   NS_LOG_FUNCTION (this << switchDevice << application << ipv4Address << macAddress);
 
@@ -193,4 +200,6 @@ SdnNetwork::InstallVnf (
   application->SetVirtualDevice (virtualDevice);
   m_controllerApp->NotifyVnfAttach (
     switchDevice, logicalPort->GetPortNo (), ipv4Address, macAddress);
+
+  switchNode->AddApplication (application);
 }

@@ -80,6 +80,7 @@ private:
 
 public:
   Ptr<Node>                     m_switchNode;
+  Ptr<Node>                     m_serverNode;
   Ptr<Node>                     m_host1Node;
   Ptr<Node>                     m_host2Node;
 
@@ -90,9 +91,14 @@ public:
   Ptr<NetDevice>                m_host2Device;
 
   Ptr<OFSwitch13Device>         m_switchDevice;
+  Ptr<OFSwitch13Device>         m_serverDevice;
 
   Ptr<OFSwitch13Port>           m_switchToHost1Port;
   Ptr<OFSwitch13Port>           m_switchToHost2Port;
+  Ptr<OFSwitch13Port>           m_switchToServerUlinkPort;
+  Ptr<OFSwitch13Port>           m_switchToServerDlinkPort;
+  Ptr<OFSwitch13Port>           m_serverToSwitchUlinkPort;
+  Ptr<OFSwitch13Port>           m_serverToSwitchDlinkPort;
 };
 
 #endif /* SDN_NETWORK_H */

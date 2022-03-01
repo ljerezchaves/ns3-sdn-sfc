@@ -97,12 +97,17 @@ SdnNetwork::ConfigureTopology (void)
   m_controllerApp->SetSdnNetwork (Ptr<SdnNetwork> (this));
   m_switchHelper->InstallController (controllerNode, m_controllerApp);
 
-  // Create switch device.
+  // Create the switch.
   m_switchNode  = CreateObject<Node> ();
   Names::Add ("switch",  m_switchNode);
   m_switchDevice = m_switchHelper->InstallSwitch (m_switchNode);
 
-  // Create the host nodes.
+  // Create the server.
+  m_serverNode  = CreateObject<Node> ();
+  Names::Add ("server",  m_serverNode);
+  m_serverDevice = m_switchHelper->InstallSwitch (m_serverNode);
+
+  // Create the host.
   m_host1Node = CreateObject<Node> ();
   m_host2Node = CreateObject<Node> ();
   Names::Add ("host1", m_host1Node);
@@ -112,6 +117,17 @@ SdnNetwork::ConfigureTopology (void)
   CsmaHelper csmaHelper;
   csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492)); // Ethernet II - PPoE
   NetDeviceContainer csmaDevices;
+
+  // Connect the switch to the server (uplink and downlink)
+  csmaDevices = csmaHelper.Install (m_switchNode, m_serverNode);
+  m_switchToServerUlinkPort = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_serverToSwitchUlinkPort = m_serverDevice->AddSwitchPort (csmaDevices.Get (1));
+  m_portDevices.Add (csmaDevices);
+
+  csmaDevices = csmaHelper.Install (m_switchNode, m_serverNode);
+  m_switchToServerDlinkPort = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_serverToSwitchDlinkPort = m_serverDevice->AddSwitchPort (csmaDevices.Get (1));
+  m_portDevices.Add (csmaDevices);
 
   // Connect each host to the network switch
   csmaDevices = csmaHelper.Install (m_switchNode, m_host1Node);

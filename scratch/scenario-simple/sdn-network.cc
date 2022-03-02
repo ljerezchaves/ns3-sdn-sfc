@@ -77,6 +77,7 @@ SdnNetwork::NotifyConstructionCompleted (void)
 {
   NS_LOG_FUNCTION (this);
 
+  // Configure network topology, VNFs and applications (respect this order!).
   ConfigureTopology ();
   ConfigureFunctions ();
   ConfigureApplications ();

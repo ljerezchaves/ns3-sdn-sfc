@@ -55,8 +55,8 @@ public:
   Mac48Address  GetMacAddr    (void) const;
   double        Get1stScaling (void) const;
   double        Get2ndScaling (void) const;
-  void          Set2ndScaling (double value);
   void          Set1stScaling (double value);
+  void          Set2ndScaling (double value);
   //\}
 
   /**

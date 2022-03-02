@@ -23,7 +23,9 @@
 namespace ns3 {
 
 /**
- * This application implements the traffic sink for a VNF chain.
+ * This application implements the traffic sink for a VNF chain. Each packet
+ * received by this application must carry a SFC tag with valid timestap so we
+ * can compute the end-to-end delay.
  */
 class SinkApp : public Application
 {

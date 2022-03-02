@@ -31,20 +31,27 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   m_2ndScaling (1)
 {
   NS_LOG_FUNCTION (this);
+  NS_ASSERT_MSG (m_vnfId > 0, "VNF ID 0 not allowed.");
 
   // Allocate virtual IP and MAC addresses for this VNF
   std::string vnfIpStr = "10.10.1." + std::to_string (vnfId);
   m_vnfIpAddress = Ipv4Address (vnfIpStr.c_str ());
   m_vnfMacAddress = Mac48Address::Allocate ();
 
-  // Configure the factories
+  // Configure the application factories.
+  // The 1st application is the one we install in the network switch. This
+  // application won't change the destination address of the packet.
   m_1stFactory.SetTypeId (VnfApp::GetTypeId ());
   m_1stFactory.Set ("VnfId", UintegerValue (vnfId));
   m_1stFactory.Set ("KeepAddress", BooleanValue (true));
   m_1stFactory.Set ("Ipv4Address", Ipv4AddressValue (m_vnfIpAddress));
 
+  // The 2nd application is the one we install in the server switch. This
+  // application will change the destination address of the packet based on the
+  // SFC tag.
   m_2ndFactory.SetTypeId (VnfApp::GetTypeId ());
   m_2ndFactory.Set ("VnfId", UintegerValue (vnfId));
+  m_1stFactory.Set ("KeepAddress", BooleanValue (false));
   m_2ndFactory.Set ("Ipv4Address", Ipv4AddressValue (m_vnfIpAddress));
 
   RegisterVnfInfo (Ptr<VnfInfo> (this));
@@ -109,6 +116,8 @@ VnfInfo::Set1stScaling (double value)
 {
   NS_LOG_FUNCTION (this << value);
 
+  // Update the PktSizeScalingFactor attribute in all applications that have
+  // already been created and on the application factory.
   m_1stScaling = value;
   m_1stFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
   for (auto &app : m_1stAppList)
@@ -122,6 +131,8 @@ VnfInfo::Set2ndScaling (double value)
 {
   NS_LOG_FUNCTION (this << value);
 
+  // Update the PktSizeScalingFactor attribute in all applications that have
+  // already been created and on the application factory.
   m_2ndScaling = value;
   m_2ndFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
   for (auto &app : m_2ndAppList)
@@ -136,10 +147,8 @@ VnfInfo::CreateVnfApps (void)
   NS_LOG_FUNCTION (this);
 
   std::pair<Ptr<VnfApp>, Ptr<VnfApp>> apps;
-
   apps.first = m_1stFactory.Create ()->GetObject<VnfApp> ();
   apps.second = m_2ndFactory.Create ()->GetObject<VnfApp> ();
-
   m_1stAppList.push_back (apps.first);
   m_2ndAppList.push_back (apps.second);
 

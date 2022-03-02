@@ -57,12 +57,12 @@ protected:
   void ConfigureTopology (void);
 
   /**
-   * Configure the VNFs.
+   * Create the VNFs and install copies of them in all switches/servers.
    */
   void ConfigureFunctions (void);
 
   /**
-   * Configure the aplications for traffic in the network.
+   * Configure the aplications for generating traffic in the network.
    */
   void ConfigureApplications (void);
 

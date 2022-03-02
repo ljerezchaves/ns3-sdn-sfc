@@ -25,7 +25,8 @@ namespace ns3 {
 class Tag;
 
 /**
- * Tag used for VNF SFC.
+ * Tag used for saving the list of VNFs in the service function chaining.
+ * Current implementation can carry a maximum of 8 VNF IDs in the tag.
  */
 class SfcTag : public Tag
 {
@@ -44,18 +45,19 @@ public:
   virtual void Print (std::ostream &os) const;
 
   /**
-   * Get the timestamp when this packet was created in the source application.
+   * Get the timestamp of when this packet was created.
    * \return The timestamp.
    */
   Time GetTimestamp (void) const;
 
   /**
-   * Get the socket address of the next VNF application in the SFC or the socket
+   * Get the socket address of the next VNF application in the SFC list. In case
+   * there are no more VNFs in the SFC list, this method will return the socket
    * address of the final sink application.
-   * \param advance If true, advance internal pointer in the VNF SFC list.
+   * \param advance If true, advance internal pointer in the SFC list.
    * \return The socket address.
    */
-  InetSocketAddress GetNextAddress  (bool advance = false);
+  InetSocketAddress GetNextAddress  (bool advance = true);
 
 private:
   uint64_t  m_timestamp;        //!< Packet creation timestamp.

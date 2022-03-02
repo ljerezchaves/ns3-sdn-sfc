@@ -153,9 +153,9 @@ SourceApp::SendPacket (uint32_t size)
 
   Ptr<Packet> packet = Create<Packet> (size);
 
-  // Create the SFC packet tag and get the next address.
+  // Create the SFC packet tag and identify the next address based on the tag.
   SfcTag sfcTag (m_vnfList, InetSocketAddress (m_finalIpAddress, m_finalUdpPort));
-  InetSocketAddress nextAddress (sfcTag.GetNextAddress (true));
+  InetSocketAddress nextAddress (sfcTag.GetNextAddress ());
   packet->AddPacketTag (sfcTag);
 
   int bytes = m_socket->SendTo (packet, 0, nextAddress);

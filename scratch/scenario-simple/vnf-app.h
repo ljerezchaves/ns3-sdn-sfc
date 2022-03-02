@@ -24,7 +24,14 @@
 namespace ns3 {
 
 /**
- * This application implements an intermediate VNF.
+ * This application implements an intermediate VNF for packet processing. In
+ * fact, this application does not with the packet except for resizing it based
+ * on the PktSizeScalingFactor attribute. Each packet received by this
+ * application must carry a SFC tag, from which we will get the next address in
+ * the VNF chain to send the packet to. When the KeepAddress attribute is set to
+ * true, this application doesn't change packet destination address. This is
+ * usefull for implementing the first (fake) VNF application that we install in
+ * the network switch.
  */
 class VnfApp : public Application
 {
@@ -39,7 +46,9 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the virtual net device and configure the send callback.
+   * Set the virtual net device and configure the send callback. Setting this
+   * virtual device is mandatory so this application can directly communicate
+   * with the OpenFlow switch.
    * \param device The virtual device.
    */
   void SetVirtualDevice (Ptr<VirtualNetDevice> device);
@@ -47,8 +56,8 @@ public:
   /**
    * Method to be assigned to the send callback of the VirtualNetDevice
    * implementing the OpenFlow logical port. It is called when the OpenFlow
-   * switch sends a packet out over the logical port. The logical port
-   * callbacks here, and we must process the packet to send it back.
+   * switch sends a packet out over the logical port. The logical port callbacks
+   * here, and we must process the packet to send it back to the switch.
    * \param inPacket The packet received from the logical port.
    * \param srcMac Ethernet source address.
    * \param dstMac Ethernet destination address.
@@ -63,13 +72,13 @@ protected:
   virtual void DoDispose (void);
 
   /**
-   * Remove the IPv4 and UDP headers from incoming packet.
+   * Remove and check the IPv4 and UDP headers from the incoming packet.
    * \param packet The incoming packet
    */
   void RemoveHeaders (Ptr<Packet> packet);
 
   /**
-   * Inser the UDP / IP / Ethernet headers on the output packet.
+   * Insert the UDP, IPv4 and Ethernet headers into the output packet.
    * \param packet The output packet.
    * \param srcIp The source IP address.
    * \param dstIp The destination IP address.

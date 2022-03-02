@@ -66,12 +66,12 @@ SdnController::NotifyHostAttach (
 {
   NS_LOG_FUNCTION (this << switchDev << portNo << hostDev);
 
-  // Save addresses for further ARP resolution.
+  // Save host addresses for further ARP resolution.
   Ipv4Address hostIpAddress = Ipv4AddressHelper::GetAddress (hostDev);
   Mac48Address hostMacAddress = Mac48Address::ConvertFrom (hostDev->GetAddress ());
   SaveArpEntry (hostIpAddress, hostMacAddress);
 
-  // Foward IP packets addressed to the host connected to this port.
+  // Foward IP packets addressed to this host to the right output port.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=add,prio=2048,table=0"
       << ",flags="        << FLAGS_OVERLAP_RESET
@@ -91,7 +91,14 @@ SdnController::NotifyVnfAttach (
   NS_LOG_FUNCTION (this << serverDevice << serverPortNo << switchDevice
                    << switchPortNo << vnfInfo << serverId);
 
-  // Packets addressed to the VNF entering the server table:
+  // To deal with several servers connected to the same network switch, our
+  // strategy is to install the rules for each server in a different pipeline
+  // tables (identified by the server ID, which starts at 1). Thus, to activate
+  // or deactivate the VNF in a switch/server pair, it is enough to adjust a
+  // flow rule in table 0 at network switch to send the packets addressed to the
+  // VNF to the correct server table.
+
+  // Packets addressed to the VNF entering the server table on network switch:
   // -> send to the logical port connected to the 1st app
   {
     std::ostringstream cmd;
@@ -146,6 +153,8 @@ SdnController::ActivateVnf (
 {
   NS_LOG_FUNCTION (this << switchDevice << vnfInfo << serverId);
 
+  // This rule sends the packets addressed to the VNF to the pipeline table
+  // assigned to the server identifier.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=add,prio=1024,table=0"
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
@@ -160,6 +169,8 @@ SdnController::DeactivateVnf (
 {
   NS_LOG_FUNCTION (this << switchDevice << vnfInfo << serverId);
 
+  // Remove the rule that sends the packets addressed to the VNF to the pipeline
+  // table assigned to the server identifier.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=del,prio=1024,table=0"
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER

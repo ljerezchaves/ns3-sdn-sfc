@@ -23,7 +23,11 @@
 namespace ns3 {
 
 /**
- * This application implements the traffic source for a VNF chain.
+ * This application implements the traffic source for a VNF chain. We can
+ * configure a custom traffic pattern by ajusting the PktInterval and PktSize
+ * random variables of this class. Each packet created by this application
+ * carries a SFC tag with a timestamp and a list of VNFs that this packet must
+ * pass through.
  */
 class SourceApp : public Application
 {
@@ -45,18 +49,22 @@ public:
 
   /**
    * Set the final IPv4 address.
+   * This is the IPv4 on the host at the end of this traffic.
    * \param address The IP address.
    */
   void SetFinalIpAddress (Ipv4Address address);
 
   /**
    * Set the final UDP port number.
+   * This is the UDP port number on the host at the end of this traffic.
    * \param port The port number.
    */
   void SetFinalUdpPort (uint16_t port);
 
   /**
-   * Set the list of VNF IDs for this traffic.
+   * Set the list of VNF IDs for intermediate traffic processing.
+   * This list is empty by default, which means the traffic will flow
+   * directly from this source application to the sink application.
    * \param vnfList The VFN ID list.
    */
   void SetVnfList (std::vector<uint8_t> vnfList);

@@ -38,30 +38,30 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Save the SDN network object.
+   * Save the SDN network pointer.
    * \param network The SDN network.
    */
   void SetSdnNetwork (Ptr<SdnNetwork> network);
 
   /**
-   * Notify this controller of a new host connected to the OpenFlow network.
-   * \param switchDev The OpenFlow switch device.
-   * \param portNo The port number created at the OpenFlow switch.
+   * Notify this controller of a host connected to an OpenFlow network switch.
+   * \param switchDev The OpenFlow network switch device.
+   * \param portNo The port number created at the OpenFlow network switch.
    * \param hostDev The device created at the host node.
    */
   void NotifyHostAttach (
     Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev);
 
   /**
-   * Notify this controller of a new VNF connected to the OpenFlow network.
-   * \param serverDevice The OpenFlow switch device
-   * \param serverPortNo The port number on the switch device
-   * \param switchDevice The OpenFlow server device
-   * \param switchPortNo The port number on the server device
-   * \param switchToServerPortNo The port number from switch to server (uplink)
-   * \param serverToSwitchPortNo The port number from server to switch (downlink)
+   * Notify this controller of a VNF connected to the OpenFlow network.
+   * \param switchDevice The OpenFlow network switch device
+   * \param switchPortNo The port number on the network switch device
+   * \param serverDevice The OpenFlow server switch device
+   * \param serverPortNo The port number on the server switch device
+   * \param switchToServerPortNo The uplink port number from switch to server
+   * \param serverToSwitchPortNo The downlink port number from server to switch
    * \param vnfInfo The VNF information.
-   * \param serverId The server ID (for several server on the same switch).
+   * \param serverId The server ID (for several servers on the same switch)
    */
   void NotifyVnfAttach (
     Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
@@ -70,7 +70,7 @@ public:
     Ptr<VnfInfo> vnfInfo, int serverId);
 
   /**
-   * Activate the VNF on the given switch device
+   * Activate the VNF on the given switch device.
    * \param switchDevice The OpenFlow switch device
    * \param vnfInfo The VNF information
    * \param serverId The server ID

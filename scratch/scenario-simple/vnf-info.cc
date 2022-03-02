@@ -40,6 +40,7 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   // Configure the factories
   m_1stFactory.SetTypeId (VnfApp::GetTypeId ());
   m_1stFactory.Set ("VnfId", UintegerValue (vnfId));
+  m_1stFactory.Set ("KeepAddress", BooleanValue (true));
   m_1stFactory.Set ("Ipv4Address", Ipv4AddressValue (m_vnfIpAddress));
 
   m_2ndFactory.SetTypeId (VnfApp::GetTypeId ());

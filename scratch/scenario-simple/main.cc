@@ -112,8 +112,8 @@ EnableVerbose (bool enable)
           LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_ALL);
       NS_UNUSED (logLevelAll);
 
-      LogComponentEnable ("SdnController",            logLevelAll);
-      LogComponentEnable ("SdnNetwork",               logLevelAll);
+      LogComponentEnable ("SdnController",            logLevelWarnInfo);
+      LogComponentEnable ("SdnNetwork",               logLevelWarnInfo);
       LogComponentEnable ("SourceApp",                logLevelWarnInfo);
       LogComponentEnable ("SinkApp",                  logLevelWarnInfo);
       LogComponentEnable ("VnfApp",                   logLevelWarnInfo);

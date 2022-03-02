@@ -108,9 +108,12 @@ SdnNetwork::ConfigureTopology (void)
   m_switchDevice = m_switchHelper->InstallSwitch (m_switchNode);
 
   // Create the server.
-  m_serverNode  = CreateObject<Node> ();
-  Names::Add ("server",  m_serverNode);
-  m_serverDevice = m_switchHelper->InstallSwitch (m_serverNode);
+  m_serverNode1 = CreateObject<Node> ();
+  m_serverNode2 = CreateObject<Node> ();
+  Names::Add ("server1",  m_serverNode1);
+  Names::Add ("server2",  m_serverNode2);
+  m_serverDevice1 = m_switchHelper->InstallSwitch (m_serverNode1);
+  m_serverDevice2 = m_switchHelper->InstallSwitch (m_serverNode2);
 
   // Create the host.
   m_host1Node = CreateObject<Node> ();
@@ -123,15 +126,26 @@ SdnNetwork::ConfigureTopology (void)
   csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492)); // Ethernet II - PPoE
   NetDeviceContainer csmaDevices;
 
-  // Connect the switch to the server (uplink and downlink)
-  csmaDevices = csmaHelper.Install (m_switchNode, m_serverNode);
-  m_switchToServerUlinkPort = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_serverToSwitchUlinkPort = m_serverDevice->AddSwitchPort (csmaDevices.Get (1));
+  // Connect the switch to the server 1 (uplink and downlink)
+  csmaDevices = csmaHelper.Install (m_switchNode, m_serverNode1);
+  m_switchToServer1UlinkPort = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToSwitchUlinkPort = m_serverDevice1->AddSwitchPort (csmaDevices.Get (1));
   m_portDevices.Add (csmaDevices);
 
-  csmaDevices = csmaHelper.Install (m_switchNode, m_serverNode);
-  m_switchToServerDlinkPort = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_serverToSwitchDlinkPort = m_serverDevice->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = csmaHelper.Install (m_switchNode, m_serverNode1);
+  m_switchToServer1DlinkPort = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server1ToSwitchDlinkPort = m_serverDevice1->AddSwitchPort (csmaDevices.Get (1));
+  m_portDevices.Add (csmaDevices);
+
+  // Connect the switch to the server 2 (uplink and downlink)
+  csmaDevices = csmaHelper.Install (m_switchNode, m_serverNode2);
+  m_switchToServer2UlinkPort = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server2ToSwitchUlinkPort = m_serverDevice2->AddSwitchPort (csmaDevices.Get (1));
+  m_portDevices.Add (csmaDevices);
+
+  csmaDevices = csmaHelper.Install (m_switchNode, m_serverNode2);
+  m_switchToServer2DlinkPort = m_switchDevice->AddSwitchPort (csmaDevices.Get (0));
+  m_server2ToSwitchDlinkPort = m_serverDevice2->AddSwitchPort (csmaDevices.Get (1));
   m_portDevices.Add (csmaDevices);
 
   // Connect each host to the network switch
@@ -176,17 +190,39 @@ SdnNetwork::ConfigureFunctions (void)
   vnfInfo1->Set2ndScaling (1/1.5);
   SdnController::SaveArpEntry (vnfInfo1->GetIpAddr (), vnfInfo1->GetMacAddr ());
 
-  // Install a copy of this VNF in the switch and server nodes
-  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode, m_serverDevice, vnfInfo1);
+  // Install a copy of this VNF in the switch and server nodes 1 and 2
+  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode1, m_serverDevice1,
+                  m_switchToServer1UlinkPort->GetPortNo (),
+                  m_server1ToSwitchDlinkPort->GetPortNo (), vnfInfo1, 1);
+  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode2, m_serverDevice2,
+                  m_switchToServer2UlinkPort->GetPortNo (),
+                  m_server2ToSwitchDlinkPort->GetPortNo (), vnfInfo1, 2);
 
-  // Create and configure the VNF (ID 1).
+  // Create and configure the VNF (ID 2).
   Ptr<VnfInfo> vnfInfo2 = CreateObject<VnfInfo> (2);
   vnfInfo2->Set1stScaling (3);
   vnfInfo2->Set2ndScaling (0.8);
-  SdnController::SaveArpEntry (vnfInfo1->GetIpAddr (), vnfInfo1->GetMacAddr ());
+  SdnController::SaveArpEntry (vnfInfo2->GetIpAddr (), vnfInfo2->GetMacAddr ());
 
-  // Install a copy of this VNF in the switch and server nodes
-  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode, m_serverDevice, vnfInfo2);
+  // Install a copy of this VNF in the switch and server nodes 1 and 2
+  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode1, m_serverDevice1,
+                  m_switchToServer1UlinkPort->GetPortNo (),
+                  m_server1ToSwitchDlinkPort->GetPortNo (), vnfInfo2, 1);
+  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode2, m_serverDevice2,
+                  m_switchToServer2UlinkPort->GetPortNo (),
+                  m_server2ToSwitchDlinkPort->GetPortNo (), vnfInfo2, 2);
+
+  // Activate VNF 1 in server 1 and VNF 2 in server 2
+  m_controllerApp->ActivateVnf (m_switchDevice, VnfInfo::GetPointer (1), 1);
+  m_controllerApp->ActivateVnf (m_switchDevice, VnfInfo::GetPointer (2), 2);
+
+  // Moving VNF 1 from server 1 to server 2 after 5 seconds.
+  Simulator::Schedule (
+    Seconds (5), &SdnController::DeactivateVnf, m_controllerApp,
+    m_switchDevice, VnfInfo::GetPointer (1), 1);
+  Simulator::Schedule (
+    Seconds (5), &SdnController::ActivateVnf, m_controllerApp,
+    m_switchDevice, VnfInfo::GetPointer (1), 2);
 }
 
 void
@@ -209,15 +245,16 @@ SdnNetwork::ConfigureApplications (void)
   sinkApp->SetStartTime (Seconds (0));
   m_host2Node->AddApplication (sinkApp);
 
-  // SFC: host 1 --> VNF 1 --> host 2.
-  sourceApp->SetVnfList ({1});
+  // SFC: host 1 --> VNF 1 --> VNF 2 --> VNF 1 --> host 2.
+  sourceApp->SetVnfList ({1, 2, 1});
 }
 
 void
 SdnNetwork::InstallVnfCopy (
   Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
   Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
-  Ptr<VnfInfo> vnfInfo)
+  uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
+  Ptr<VnfInfo> vnfInfo, int serverId)
 {
   NS_LOG_FUNCTION (this << serverNode << serverDevice <<
                    switchNode << switchDevice << vnfInfo);
@@ -236,15 +273,16 @@ SdnNetwork::InstallVnfCopy (
   // Install the second application on the server switch
   Ptr<VirtualNetDevice> virtualDevice2 = CreateObject<VirtualNetDevice> ();
   virtualDevice2->SetAddress (vnfInfo->GetMacAddr ());
-  Ptr<OFSwitch13Port> logicalPort2 = switchDevice->AddSwitchPort (virtualDevice2);
+  Ptr<OFSwitch13Port> logicalPort2 = serverDevice->AddSwitchPort (virtualDevice2);
   vnfApp2->SetVirtualDevice (virtualDevice2);
   serverNode->AddApplication (vnfApp2);
 
-  // Notify the controller about this new VNF copy
+  // Notify the controller about this VNF copy
   m_controllerApp->NotifyVnfAttach (
     switchDevice, logicalPort1->GetPortNo (),
     serverDevice, logicalPort2->GetPortNo (),
-    vnfInfo, 0); // FIXME
+    switchToServerPortNo, serverToSwitchPortNo,
+    vnfInfo, serverId);
 }
 
 } // namespace ns3

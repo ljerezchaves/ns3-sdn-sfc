@@ -72,11 +72,16 @@ protected:
    * \param switchDevice The network switch device
    * \param serverNode The server switch node
    * \param serverDevice The server switch device
-   * \param vnfInfo The VNF information
+   * \param switchToServerPortNo The port number from switch to server (uplink)
+   * \param serverToSwitchPortNo The port number from server to switch (downlink)
+   * \param vnfInfo The VNF information.
+   * \param serverId The server ID (for several server on the same switch).
    */
-  void InstallVnfCopy (Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
-                       Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
-                       Ptr<VnfInfo> vnfInfo);
+  void InstallVnfCopy (
+    Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
+    Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
+    uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
+    Ptr<VnfInfo> vnfInfo, int serverId);
 
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.
@@ -86,7 +91,8 @@ private:
 
 public:
   Ptr<Node>                     m_switchNode;
-  Ptr<Node>                     m_serverNode;
+  Ptr<Node>                     m_serverNode1;
+  Ptr<Node>                     m_serverNode2;
   Ptr<Node>                     m_host1Node;
   Ptr<Node>                     m_host2Node;
 
@@ -97,14 +103,19 @@ public:
   Ptr<NetDevice>                m_host2Device;
 
   Ptr<OFSwitch13Device>         m_switchDevice;
-  Ptr<OFSwitch13Device>         m_serverDevice;
+  Ptr<OFSwitch13Device>         m_serverDevice1;
+  Ptr<OFSwitch13Device>         m_serverDevice2;
 
   Ptr<OFSwitch13Port>           m_switchToHost1Port;
   Ptr<OFSwitch13Port>           m_switchToHost2Port;
-  Ptr<OFSwitch13Port>           m_switchToServerUlinkPort;
-  Ptr<OFSwitch13Port>           m_switchToServerDlinkPort;
-  Ptr<OFSwitch13Port>           m_serverToSwitchUlinkPort;
-  Ptr<OFSwitch13Port>           m_serverToSwitchDlinkPort;
+  Ptr<OFSwitch13Port>           m_switchToServer1UlinkPort;
+  Ptr<OFSwitch13Port>           m_switchToServer1DlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToSwitchUlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToSwitchDlinkPort;
+  Ptr<OFSwitch13Port>           m_switchToServer2UlinkPort;
+  Ptr<OFSwitch13Port>           m_switchToServer2DlinkPort;
+  Ptr<OFSwitch13Port>           m_server2ToSwitchUlinkPort;
+  Ptr<OFSwitch13Port>           m_server2ToSwitchDlinkPort;
 };
 
 } // namespace ns3

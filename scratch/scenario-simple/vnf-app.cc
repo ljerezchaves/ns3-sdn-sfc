@@ -19,13 +19,6 @@
 #include "sfc-tag.h"
 #include "sdn-controller.h"
 
-#undef NS_LOG_APPEND_CONTEXT
-#define NS_LOG_APPEND_CONTEXT                  \
-  if (m_vnfId)                                 \
-    {                                          \
-      std::clog << "[VNF " << m_vnfId << "] "; \
-    }
-
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("VnfApp");
@@ -55,6 +48,11 @@ VnfApp::GetTypeId (void)
                    UintegerValue (0),
                    MakeUintegerAccessor (&VnfApp::m_vnfId),
                    MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("KeepAddress", "Keep the VNF addresses.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
+                   BooleanValue (false),
+                   MakeBooleanAccessor (&VnfApp::m_keepAddress),
+                   MakeBooleanChecker ())
 
     .AddAttribute ("Ipv4Address", "Local IPv4 address.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
@@ -77,22 +75,6 @@ VnfApp::GetTypeId (void)
 }
 
 void
-VnfApp::SetIpv4Address (Ipv4Address address)
-{
-  NS_LOG_FUNCTION (this << address);
-
-  m_ipv4Address = address;
-}
-
-void
-VnfApp::SetUdpPort (uint16_t port)
-{
-  NS_LOG_FUNCTION (this << port);
-
-  m_udpPort = port;
-}
-
-void
 VnfApp::SetVirtualDevice (Ptr<VirtualNetDevice> device)
 {
   NS_LOG_FUNCTION (this << device);
@@ -110,7 +92,8 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
   // The packet got here with the IP and UDP headers. Let's remove them first.
   RemoveHeaders (inPacket);
 
-  NS_LOG_INFO ("VNF app received a packet of " << inPacket->GetSize () << " bytes.");
+  NS_LOG_INFO ("VNF " << m_vnfId << " at node " << GetNode () <<
+               " received a packet of " << inPacket->GetSize () << " bytes.");
 
   // Create the new packet with adjusted size.
   int newPacketSize = inPacket->GetSize () * m_pktSizeScale;
@@ -118,10 +101,19 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
 
   SfcTag sfcTag;
   inPacket->PeekPacketTag (sfcTag);
-  InetSocketAddress nextAddress (sfcTag.GetNextAddress (true));
+  InetSocketAddress nextAddress (Ipv4Address::GetAny ());
+  if (m_keepAddress)
+    {
+      nextAddress = InetSocketAddress (m_ipv4Address, m_udpPort);
+    }
+  else
+    {
+      nextAddress = InetSocketAddress (sfcTag.GetNextAddress (true));
+    }
   outPacket->AddPacketTag (sfcTag);
 
-  NS_LOG_INFO ("VNF app will send a packet of " << outPacket->GetSize () << " bytes to IP "
+  NS_LOG_INFO ("VNF " << m_vnfId << " at node " << GetNode () <<
+               " will send a packet of " << outPacket->GetSize () << " bytes to IP "
                << nextAddress.GetIpv4 () << " port " << nextAddress.GetPort ());
 
   // Insert new UDP, IP and Ethernet headers.

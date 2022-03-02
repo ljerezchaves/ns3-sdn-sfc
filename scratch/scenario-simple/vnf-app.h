@@ -39,18 +39,6 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Set the local IPv4 address.
-   * \param address The address.
-   */
-  void SetIpv4Address (Ipv4Address address);
-
-  /**
-   * Set the local UDP port number.
-   * \param port The port number.
-   */
-  void SetUdpPort (uint16_t port);
-
-  /**
    * Set the virtual net device and configure the send callback.
    * \param device The virtual device.
    */
@@ -95,9 +83,9 @@ protected:
 
 private:
   uint32_t              m_vnfId;            //!< VNF ID.
-
   Ipv4Address           m_ipv4Address;      //!< Local IPv4 address.
   uint16_t              m_udpPort;          //!< Local UDP port.
+  bool                  m_keepAddress;      //!< Keep VNF address.
 
   double                m_pktSizeScale;     //!< Packet size scaling factor.
   EventId               m_sendEvent;        //!< SendPacket event.

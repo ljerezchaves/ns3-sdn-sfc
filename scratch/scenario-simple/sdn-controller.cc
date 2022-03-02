@@ -29,7 +29,6 @@ NS_OBJECT_ENSURE_REGISTERED (SdnController);
 SdnController::IpMacMap_t SdnController::m_arpTable;
 
 // OpenFlow flow-mod flags.
-#define FLAGS_REMOVED_OVERLAP_RESET ((OFPFF_SEND_FLOW_REM | OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
 #define FLAGS_OVERLAP_RESET ((OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
 
 SdnController::SdnController ()
@@ -74,7 +73,8 @@ SdnController::NotifyHostAttach (
 
   // Foward IP packets addressed to the host connected to this port.
   std::ostringstream cmd;
-  cmd << "flow-mod cmd=add,prio=1024,table=0"
+  cmd << "flow-mod cmd=add,prio=2048,table=0"
+      << ",flags="        << FLAGS_OVERLAP_RESET
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
       << ",ip_dst="       << hostIpAddress
       << " apply:output=" << portNo;
@@ -83,30 +83,88 @@ SdnController::NotifyHostAttach (
 
 void
 SdnController::NotifyVnfAttach (
-  Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
   Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
-  Ptr<VnfInfo> vnfInfo, int tableId)
+  Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
+  uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
+  Ptr<VnfInfo> vnfInfo, int serverId)
 {
-  NS_LOG_FUNCTION (this << serverDevice << serverPortNo <<
-                   switchDevice << switchPortNo << vnfInfo);
+  NS_LOG_FUNCTION (this << serverDevice << serverPortNo << switchDevice
+                   << switchPortNo << vnfInfo << serverId);
 
-  // Foward IP packets addressed to the VNF connected to this port.
+  // Packets addressed to the VNF entering the server table:
+  // -> send to the logical port connected to the 1st app
   {
     std::ostringstream cmd;
-    cmd << "flow-mod cmd=add,prio=1024,table=" << tableId
-        << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
-        << ",ip_dst="       << vnfInfo->GetIpAddr ()
-        << " apply:output=" << serverPortNo;
-    DpctlExecute (serverDevice->GetDatapathId (), cmd.str ());
-  }
-  {
-    std::ostringstream cmd;
-    cmd << "flow-mod cmd=add,prio=1024,table=" << tableId
+    cmd << "flow-mod cmd=add,prio=1024,table=" << serverId
+        << ",flags="        << FLAGS_OVERLAP_RESET
         << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
         << ",ip_dst="       << vnfInfo->GetIpAddr ()
         << " apply:output=" << switchPortNo;
     DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
   }
+
+  // Packets coming back from the 1st app in the network switch:
+  // -> send to the server switch
+  {
+    std::ostringstream cmd;
+    cmd << "flow-mod cmd=add,prio=4096,table=0"
+        << ",flags="        << FLAGS_OVERLAP_RESET
+        << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+        << ",in_port="      << switchPortNo
+        << " apply:output=" << switchToServerPortNo;
+    DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
+  }
+
+  // Packets addressed to the VNF entering the server switch:
+  // -> send to the logical port connected to the 2nd app
+  {
+    std::ostringstream cmd;
+    cmd << "flow-mod cmd=add,prio=1024,table=0"
+        << ",flags="        << FLAGS_OVERLAP_RESET
+        << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+        << ",ip_dst="       << vnfInfo->GetIpAddr ()
+        << " apply:output=" << serverPortNo;
+    DpctlExecute (serverDevice->GetDatapathId (), cmd.str ());
+  }
+
+  // Packets coming back from the 2nd app in the server switch:
+  // -> send back to the network switch
+  {
+    std::ostringstream cmd;
+    cmd << "flow-mod cmd=add,prio=4096,table=0"
+        << ",flags="        << FLAGS_OVERLAP_RESET
+        << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+        << ",in_port="      << serverPortNo
+        << " apply:output=" << serverToSwitchPortNo;
+    DpctlExecute (serverDevice->GetDatapathId (), cmd.str ());
+  }
+}
+
+void
+SdnController::ActivateVnf (
+  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId)
+{
+  NS_LOG_FUNCTION (this << switchDevice << vnfInfo << serverId);
+
+  std::ostringstream cmd;
+  cmd << "flow-mod cmd=add,prio=1024,table=0"
+      << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+      << ",ip_dst="       << vnfInfo->GetIpAddr ()
+      << " goto:"         << serverId;
+  DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
+}
+
+void
+SdnController::DeactivateVnf (
+  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId)
+{
+  NS_LOG_FUNCTION (this << switchDevice << vnfInfo << serverId);
+
+  std::ostringstream cmd;
+  cmd << "flow-mod cmd=del,prio=1024,table=0"
+      << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+      << ",ip_dst="       << vnfInfo->GetIpAddr ();
+  DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
 }
 
 void
@@ -115,7 +173,6 @@ SdnController::DoDispose ()
   NS_LOG_FUNCTION (this);
 
   m_network = 0;
-  m_arpTable.clear ();
   OFSwitch13Controller::DoDispose ();
 }
 
@@ -139,7 +196,6 @@ SdnController::HandlePacketIn (
 
       if (ethType == ArpL3Protocol::PROT_NUMBER)
         {
-          // ARP packet
           return HandleArpPacketIn (msg, swtch, xid);
         }
     }
@@ -296,11 +352,10 @@ void
 SdnController::SaveArpEntry (Ipv4Address ipAddr, Mac48Address macAddr)
 {
   std::pair<Ipv4Address, Mac48Address> entry (ipAddr, macAddr);
-  std::pair <IpMacMap_t::iterator, bool> ret;
-  ret = SdnController::m_arpTable.insert (entry);
+  auto ret = SdnController::m_arpTable.insert (entry);
   if (ret.second == true)
     {
-      NS_LOG_INFO ("New ARP entry: " << ipAddr << " - " << macAddr);
+      NS_LOG_DEBUG ("New ARP entry: " << ipAddr << " - " << macAddr);
       return;
     }
 }
@@ -308,11 +363,10 @@ SdnController::SaveArpEntry (Ipv4Address ipAddr, Mac48Address macAddr)
 Mac48Address
 SdnController::GetArpEntry (Ipv4Address ip)
 {
-  IpMacMap_t::iterator ret;
-  ret = SdnController::m_arpTable.find (ip);
+  auto ret = SdnController::m_arpTable.find (ip);
   if (ret != m_arpTable.end ())
     {
-      NS_LOG_INFO ("Found ARP entry: " << ip << " - " << ret->second);
+      NS_LOG_DEBUG ("Found ARP entry: " << ip << " - " << ret->second);
       return ret->second;
     }
   NS_ABORT_MSG ("No ARP information for this IP.");

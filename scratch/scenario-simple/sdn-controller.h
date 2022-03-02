@@ -49,7 +49,8 @@ public:
    * \param portNo The port number created at the OpenFlow switch.
    * \param hostDev The device created at the host node.
    */
-  void NotifyHostAttach (Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev);
+  void NotifyHostAttach (
+    Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev);
 
   /**
    * Notify this controller of a new VNF connected to the OpenFlow network.
@@ -57,12 +58,34 @@ public:
    * \param serverPortNo The port number on the switch device
    * \param switchDevice The OpenFlow server device
    * \param switchPortNo The port number on the server device
+   * \param switchToServerPortNo The port number from switch to server (uplink)
+   * \param serverToSwitchPortNo The port number from server to switch (downlink)
    * \param vnfInfo The VNF information.
-   * \param tableId The pipeline table to save this information.
+   * \param serverId The server ID (for several server on the same switch).
    */
-  void NotifyVnfAttach (Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
-                        Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
-                        Ptr<VnfInfo> vnfInfo, int tableId = 1);
+  void NotifyVnfAttach (
+    Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
+    Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
+    uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
+    Ptr<VnfInfo> vnfInfo, int serverId);
+
+  /**
+   * Activate the VNF on the given switch device
+   * \param switchDevice The OpenFlow switch device
+   * \param vnfInfo The VNF information
+   * \param serverId The server ID
+   */
+  void ActivateVnf (
+    Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId);
+
+  /**
+   * Deactivate the VNF on the given switch device
+   * \param switchDevice The OpenFlow switch device
+   * \param vnfInfo The VNF information
+   * \param serverId The server ID
+   */
+  void DeactivateVnf (
+    Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId);
 
   /**
    * Perform an ARP resolution
@@ -83,7 +106,8 @@ protected:
   virtual void DoDispose ();
 
   // Inherited from OFSwitch13Controller
-  ofl_err HandlePacketIn (struct ofl_msg_packet_in *msg, Ptr<const RemoteSwitch> swtch, uint32_t xid);
+  ofl_err HandlePacketIn (
+    struct ofl_msg_packet_in *msg, Ptr<const RemoteSwitch> swtch, uint32_t xid);
   void HandshakeSuccessful (Ptr<const RemoteSwitch> swtch);
 
 private:
@@ -94,7 +118,8 @@ private:
    * \param xid Transaction id.
    * \return 0 if everything's ok, otherwise an error number.
    */
-  ofl_err HandleArpPacketIn (struct ofl_msg_packet_in *msg, Ptr<const RemoteSwitch> swtch, uint32_t xid);
+  ofl_err HandleArpPacketIn (
+    struct ofl_msg_packet_in *msg, Ptr<const RemoteSwitch> swtch, uint32_t xid);
 
   /**
    * Extract an IPv4 address from packet match.
@@ -102,7 +127,8 @@ private:
    * \param match The ofl_match structure pointer.
    * \return The IPv4 address.
    */
-  Ipv4Address ExtractIpv4Address (uint32_t oxm_of, struct ofl_match* match);
+  Ipv4Address ExtractIpv4Address (
+    uint32_t oxm_of, struct ofl_match* match);
 
   /**
    * Create an ARP reply packet, encapsulated inside of an Ethernet frame.
@@ -112,10 +138,11 @@ private:
    * \param dstIp Destination IP address.
    * \return The ns3 Ptr<Packet> with the ARP reply.
    */
-  Ptr<Packet> CreateArpReply (Mac48Address srcMac, Ipv4Address srcIp,
-                              Mac48Address dstMac, Ipv4Address dstIp);
+  Ptr<Packet> CreateArpReply (
+    Mac48Address srcMac, Ipv4Address srcIp,
+    Mac48Address dstMac, Ipv4Address dstIp);
 
-  Ptr<SdnNetwork>     m_network;    //!< SDN network pointer.
+  Ptr<SdnNetwork>   m_network;      //!< SDN network pointer.
 
   /** Map saving <IPv4 address / MAC address> */
   typedef std::map<Ipv4Address, Mac48Address> IpMacMap_t;

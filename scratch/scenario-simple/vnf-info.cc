@@ -51,7 +51,7 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   // SFC tag.
   m_2ndFactory.SetTypeId (VnfApp::GetTypeId ());
   m_2ndFactory.Set ("VnfId", UintegerValue (vnfId));
-  m_1stFactory.Set ("KeepAddress", BooleanValue (false));
+  m_2ndFactory.Set ("KeepAddress", BooleanValue (false));
   m_2ndFactory.Set ("Ipv4Address", Ipv4AddressValue (m_vnfIpAddress));
 
   RegisterVnfInfo (Ptr<VnfInfo> (this));

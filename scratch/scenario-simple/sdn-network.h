@@ -52,7 +52,8 @@ protected:
   virtual void NotifyConstructionCompleted (void);
 
   /**
-   * Configure the SDN network topology.
+   * Configure the SDN network topology. This includes nodes and links between
+   * core/edge switches, server switches and host nodes.
    */
   void ConfigureTopology (void);
 
@@ -67,15 +68,15 @@ protected:
   void ConfigureApplications (void);
 
   /**
-   * Install a VNF copy on the switch and server nodes.
-   * \param switchNode The network switch node
-   * \param switchDevice The network switch device
-   * \param serverNode The server switch node
-   * \param serverDevice The server switch device
-   * \param switchToServerPortNo The port number from switch to server (uplink)
-   * \param serverToSwitchPortNo The port number from server to switch (downlink)
+   * Install a VNF copy on the network switch and server nodes.
+   * \param switchDevice The OpenFlow network switch device
+   * \param switchPortNo The port number on the network switch device
+   * \param serverDevice The OpenFlow server switch device
+   * \param serverPortNo The port number on the server switch device
+   * \param switchToServerPortNo The uplink port number from switch to server
+   * \param serverToSwitchPortNo The downlink port number from server to switch
    * \param vnfInfo The VNF information.
-   * \param serverId The server ID (for several server on the same switch).
+   * \param serverId The server ID (for several servers on the same switch)
    */
   void InstallVnfCopy (
     Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,

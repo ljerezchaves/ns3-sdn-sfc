@@ -191,7 +191,7 @@ SdnNetwork::ConfigureFunctions (void)
   vnfInfo1->Set2ndScaling (1/1.5);
   SdnController::SaveArpEntry (vnfInfo1->GetIpAddr (), vnfInfo1->GetMacAddr ());
 
-  // Install a copy of this VNF in the switch and server nodes 1 and 2
+  // Install a copy of this VNF in switch/server1 and switch/server2
   InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode1, m_serverDevice1,
                   m_switchToServer1UlinkPort->GetPortNo (),
                   m_server1ToSwitchDlinkPort->GetPortNo (), vnfInfo1, 1);
@@ -205,7 +205,7 @@ SdnNetwork::ConfigureFunctions (void)
   vnfInfo2->Set2ndScaling (0.8);
   SdnController::SaveArpEntry (vnfInfo2->GetIpAddr (), vnfInfo2->GetMacAddr ());
 
-  // Install a copy of this VNF in the switch and server nodes 1 and 2
+  // Install a copy of this VNF in switch/server1 and switch/server2
   InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode1, m_serverDevice1,
                   m_switchToServer1UlinkPort->GetPortNo (),
                   m_server1ToSwitchDlinkPort->GetPortNo (), vnfInfo2, 1);
@@ -213,17 +213,15 @@ SdnNetwork::ConfigureFunctions (void)
                   m_switchToServer2UlinkPort->GetPortNo (),
                   m_server2ToSwitchDlinkPort->GetPortNo (), vnfInfo2, 2);
 
-  // Activate VNF 1 in server 1 and VNF 2 in server 2
+  // Activate VNF 1 in server1 and VNF 2 in server2
   m_controllerApp->ActivateVnf (m_switchDevice, VnfInfo::GetPointer (1), 1);
   m_controllerApp->ActivateVnf (m_switchDevice, VnfInfo::GetPointer (2), 2);
 
-  // Moving VNF 1 from server 1 to server 2 after 5 seconds.
-  Simulator::Schedule (
-    Seconds (5), &SdnController::DeactivateVnf, m_controllerApp,
-    m_switchDevice, VnfInfo::GetPointer (1), 1);
-  Simulator::Schedule (
-    Seconds (5), &SdnController::ActivateVnf, m_controllerApp,
-    m_switchDevice, VnfInfo::GetPointer (1), 2);
+  // Move VNF 1 from server1 to server2 at time 5 seconds.
+  Simulator::Schedule (Seconds (5), &SdnController::DeactivateVnf,
+                       m_controllerApp, m_switchDevice, vnfInfo1, 1);
+  Simulator::Schedule (Seconds (5), &SdnController::ActivateVnf,
+                       m_controllerApp, m_switchDevice, vnfInfo1, 2);
 }
 
 void
@@ -246,8 +244,8 @@ SdnNetwork::ConfigureApplications (void)
   sinkApp->SetStartTime (Seconds (0));
   m_host2Node->AddApplication (sinkApp);
 
-  // SFC: host 1 --> VNF 1 --> VNF 2 --> VNF 1 --> host 2.
-  sourceApp->SetVnfList ({1, 2, 1});
+  // SFC: host 1 --> VNF 1 --> VNF 2 --> host 2.
+  sourceApp->SetVnfList ({1, 2});
 }
 
 void

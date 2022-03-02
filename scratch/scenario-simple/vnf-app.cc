@@ -101,6 +101,7 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
   // Create a new output packet with adjusted size.
   int newPacketSize = inPacket->GetSize () * m_pktSizeScale;
   Ptr<Packet> outPacket = Create<Packet> (newPacketSize);
+  // FIXME: Ethernet packet payload cannot exceed 1464 bytes: fragment it here.
 
   // Copy the SFC tag from the incoming to the outcoming packet
   SfcTag sfcTag;

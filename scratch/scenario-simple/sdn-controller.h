@@ -51,8 +51,6 @@ public:
    */
   void NotifyHostAttach (Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev);
 
-  void NotifyNewVnf (Ptr<VnfInfo> vnfInfo);
-
   /**
    * Notify this controller of a new VNF connected to the OpenFlow network.
    * \param serverDevice The OpenFlow switch device
@@ -62,8 +60,8 @@ public:
    * \param vnfInfo The VNF information.
    * \param tableId The pipeline table to save this information.
    */
-  void NotifyVnfAttach (Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
-                        Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
+  void NotifyVnfAttach (Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
+                        Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
                         Ptr<VnfInfo> vnfInfo, int tableId = 1);
 
   /**
@@ -72,6 +70,13 @@ public:
    * \return The MAC address for this ip.
    */
   static Mac48Address GetArpEntry (Ipv4Address ip);
+
+  /**
+   * Save the pair IP / MAC address in ARP table.
+   * \param ipAddr The IPv4 address.
+   * \param macAddr The MAC address.
+   */
+  static void SaveArpEntry (Ipv4Address ipAddr, Mac48Address macAddr);
 
 protected:
   /** Destructor implementation */
@@ -109,13 +114,6 @@ private:
    */
   Ptr<Packet> CreateArpReply (Mac48Address srcMac, Ipv4Address srcIp,
                               Mac48Address dstMac, Ipv4Address dstIp);
-
-  /**
-   * Save the pair IP / MAC address in ARP table.
-   * \param ipAddr The IPv4 address.
-   * \param macAddr The MAC address.
-   */
-  static void SaveArpEntry (Ipv4Address ipAddr, Mac48Address macAddr);
 
   Ptr<SdnNetwork>     m_network;    //!< SDN network pointer.
 

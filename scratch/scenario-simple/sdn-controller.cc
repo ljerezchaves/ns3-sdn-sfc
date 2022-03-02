@@ -82,16 +82,6 @@ SdnController::NotifyHostAttach (
 }
 
 void
-SdnController::NotifyNewVnf (Ptr<VnfInfo> vnfInfo)
-{
-  NS_LOG_FUNCTION (this << vnfInfo);
-
-  // Save virtual IP and MAC addresses for further ARP resolution.
-  SaveArpEntry (vnfInfo->GetServerIpAddr (), vnfInfo->GetServerMacAddr ());
-  SaveArpEntry (vnfInfo->GetSwitchIpAddr (), vnfInfo->GetSwitchMacAddr ());
-}
-
-void
 SdnController::NotifyVnfAttach (
   Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
   Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
@@ -105,7 +95,7 @@ SdnController::NotifyVnfAttach (
     std::ostringstream cmd;
     cmd << "flow-mod cmd=add,prio=1024,table=" << tableId
         << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
-        << ",ip_dst="       << vnfInfo->GetServerIpAddr ()
+        << ",ip_dst="       << vnfInfo->GetIpAddr ()
         << " apply:output=" << serverPortNo;
     DpctlExecute (serverDevice->GetDatapathId (), cmd.str ());
   }
@@ -113,7 +103,7 @@ SdnController::NotifyVnfAttach (
     std::ostringstream cmd;
     cmd << "flow-mod cmd=add,prio=1024,table=" << tableId
         << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
-        << ",ip_dst="       << vnfInfo->GetSwitchIpAddr ()
+        << ",ip_dst="       << vnfInfo->GetIpAddr ()
         << " apply:output=" << switchPortNo;
     DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
   }

@@ -27,30 +27,24 @@ VnfInfo::VnfInfoMap_t VnfInfo::m_vnfInfoById;
 
 VnfInfo::VnfInfo (uint32_t vnfId)
   : m_vnfId (vnfId),
-  m_serverScaling (1),
-  m_switchScaling (1),
-  m_activeCopyIdx (0)
+  m_1stScaling (1),
+  m_2ndScaling (1)
 {
   NS_LOG_FUNCTION (this);
 
-  // Allocate virtual IP addresses for this VNF
-  std::string ipServerStr = "10.10.1." + std::to_string (vnfId);
-  std::string ipSwitchStr = "10.10.2." + std::to_string (vnfId);
-  m_serverIpAddress = Ipv4Address (ipServerStr.c_str ());
-  m_switchIpAddress = Ipv4Address (ipSwitchStr.c_str ());
-
-  // Allocate virtual MAC addresses for this VNF
-  m_serverMacAddress = Mac48Address::Allocate ();
-  m_switchMacAddress = Mac48Address::Allocate ();
+  // Allocate virtual IP and MAC addresses for this VNF
+  std::string vnfIpStr = "10.10.1." + std::to_string (vnfId);
+  m_vnfIpAddress = Ipv4Address (vnfIpStr.c_str ());
+  m_vnfMacAddress = Mac48Address::Allocate ();
 
   // Configure the factories
-  m_serverFactory.SetTypeId (VnfApp::GetTypeId ());
-  m_serverFactory.Set ("VnfId", UintegerValue (vnfId));
-  m_serverFactory.Set ("Ipv4Address", Ipv4AddressValue (m_serverIpAddress));
+  m_1stFactory.SetTypeId (VnfApp::GetTypeId ());
+  m_1stFactory.Set ("VnfId", UintegerValue (vnfId));
+  m_1stFactory.Set ("Ipv4Address", Ipv4AddressValue (m_vnfIpAddress));
 
-  m_switchFactory.SetTypeId (VnfApp::GetTypeId ());
-  m_switchFactory.Set ("VnfId", UintegerValue (vnfId));
-  m_switchFactory.Set ("Ipv4Address", Ipv4AddressValue (m_switchIpAddress));
+  m_2ndFactory.SetTypeId (VnfApp::GetTypeId ());
+  m_2ndFactory.Set ("VnfId", UintegerValue (vnfId));
+  m_2ndFactory.Set ("Ipv4Address", Ipv4AddressValue (m_vnfIpAddress));
 
   RegisterVnfInfo (Ptr<VnfInfo> (this));
 }
@@ -78,125 +72,77 @@ VnfInfo::GetVnfId (void) const
 }
 
 Ipv4Address
-VnfInfo::GetServerIpAddr (void) const
+VnfInfo::GetIpAddr (void) const
 {
   NS_LOG_FUNCTION (this);
 
-  return m_serverIpAddress;
-}
-
-Ipv4Address
-VnfInfo::GetSwitchIpAddr (void) const
-{
-  NS_LOG_FUNCTION (this);
-
-  return m_switchIpAddress;
+  return m_vnfIpAddress;
 }
 
 Mac48Address
-VnfInfo::GetServerMacAddr (void) const
+VnfInfo::GetMacAddr (void) const
 {
   NS_LOG_FUNCTION (this);
 
-  return m_serverMacAddress;
-}
-
-Mac48Address
-VnfInfo::GetSwitchMacAddr (void) const
-{
-  NS_LOG_FUNCTION (this);
-
-  return m_switchMacAddress;
+  return m_vnfMacAddress;
 }
 
 double
-VnfInfo::GetServerScaling (void) const
+VnfInfo::Get1stScaling (void) const
 {
   NS_LOG_FUNCTION (this);
 
-  return m_serverScaling;
+  return m_1stScaling;
 }
 
 double
-VnfInfo::GetSwitchScaling (void) const
+VnfInfo::Get2ndScaling (void) const
 {
   NS_LOG_FUNCTION (this);
 
-  return m_switchScaling;
-}
-
-int
-VnfInfo::GetActiveCopyIdx (void) const
-{
-  NS_LOG_FUNCTION (this);
-
-  return m_activeCopyIdx;
+  return m_2ndScaling;
 }
 
 void
-VnfInfo::SetServerScaling (double value)
+VnfInfo::Set1stScaling (double value)
 {
   NS_LOG_FUNCTION (this << value);
 
-  m_serverScaling = value;
-  m_serverFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
-  for (auto &app : m_serverAppList)
+  m_1stScaling = value;
+  m_1stFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
+  for (auto &app : m_1stAppList)
     {
       app->SetAttribute ("PktSizeScalingFactor", DoubleValue (value));
     }
 }
 
 void
-VnfInfo::SetSwitchScaling (double value)
+VnfInfo::Set2ndScaling (double value)
 {
   NS_LOG_FUNCTION (this << value);
 
-  m_switchScaling = value;
-  m_switchFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
-  for (auto &app : m_switchAppList)
+  m_2ndScaling = value;
+  m_2ndFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
+  for (auto &app : m_2ndAppList)
     {
       app->SetAttribute ("PktSizeScalingFactor", DoubleValue (value));
     }
 }
 
-void
-VnfInfo::SetActiveCopyIdx (int value)
+std::pair<Ptr<VnfApp>, Ptr<VnfApp>>
+VnfInfo::CreateVnfApps (void)
 {
   NS_LOG_FUNCTION (this);
 
-  m_activeCopyIdx = value;
-}
+  std::pair<Ptr<VnfApp>, Ptr<VnfApp>> apps;
 
-Ptr<VnfApp>
-VnfInfo::CreateServerApp (void)
-{
-  NS_LOG_FUNCTION (this);
+  apps.first = m_1stFactory.Create ()->GetObject<VnfApp> ();
+  apps.second = m_2ndFactory.Create ()->GetObject<VnfApp> ();
 
-  return m_serverFactory.Create ()->GetObject<VnfApp> ();
-}
+  m_1stAppList.push_back (apps.first);
+  m_2ndAppList.push_back (apps.second);
 
-Ptr<VnfApp>
-VnfInfo::CreateSwitchApp (void)
-{
-  NS_LOG_FUNCTION (this);
-
-  return m_switchFactory.Create ()->GetObject<VnfApp> ();
-}
-
-void
-VnfInfo::NewVnfCopy (
-  Ptr<VnfApp> serverApp, Ptr<OFSwitch13Device> serverDevice, uint32_t serverPort,
-  Ptr<VnfApp> switchApp, Ptr<OFSwitch13Device> switchDevice, uint32_t switchPort)
-{
-  NS_LOG_FUNCTION (this << serverApp << serverDevice << serverPort <<
-                   switchApp << switchDevice << switchPort);
-
-  m_serverAppList.push_back (serverApp);
-  m_switchAppList.push_back (switchApp);
-  m_serverDevList.Add (serverDevice);
-  m_switchDevList.Add (switchDevice);
-  m_serverPortList.push_back (serverPort);
-  m_switchPortList.push_back (switchPort);
+  return apps;
 }
 
 Ptr<VnfInfo>
@@ -218,8 +164,8 @@ VnfInfo::DoDispose ()
 {
   NS_LOG_FUNCTION (this);
 
-  m_switchAppList.clear ();
-  m_serverAppList.clear ();
+  m_1stAppList.clear ();
+  m_2ndAppList.clear ();
   Object::DoDispose ();
 }
 
@@ -229,7 +175,7 @@ VnfInfo::RegisterVnfInfo (Ptr<VnfInfo> vnfInfo)
   NS_LOG_FUNCTION_NOARGS ();
 
   uint32_t vnfId = vnfInfo->GetVnfId ();
-  std::pair<uint32_t, Ptr<VnfInfo> > entry (vnfId, vnfInfo);
+  std::pair<uint32_t, Ptr<VnfInfo>> entry (vnfId, vnfInfo);
   auto ret = VnfInfo::m_vnfInfoById.insert (entry);
   NS_ABORT_MSG_IF (ret.second == false, "Existing VNF info with this ID.");
 }

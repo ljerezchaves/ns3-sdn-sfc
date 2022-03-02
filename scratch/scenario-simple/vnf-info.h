@@ -50,41 +50,20 @@ public:
    * \return The requested information.
    */
   //\{
-  uint32_t      GetVnfId          (void) const;
-  Ipv4Address   GetServerIpAddr   (void) const;
-  Ipv4Address   GetSwitchIpAddr   (void) const;
-  Mac48Address  GetServerMacAddr  (void) const;
-  Mac48Address  GetSwitchMacAddr  (void) const;
-  double        GetServerScaling  (void) const;
-  double        GetSwitchScaling  (void) const;
-  int           GetActiveCopyIdx  (void) const;
-
-  void          SetServerScaling  (double value);
-  void          SetSwitchScaling  (double value);
-  void          SetActiveCopyIdx  (int value);
+  uint32_t      GetVnfId      (void) const;
+  Ipv4Address   GetIpAddr     (void) const;
+  Mac48Address  GetMacAddr    (void) const;
+  double        Get1stScaling (void) const;
+  double        Get2ndScaling (void) const;
+  void          Set2ndScaling (double value);
+  void          Set1stScaling (double value);
   //\}
 
   /**
-   * Create a VNF application
-   * \return The created applivation
+   * Create the pair of applications for this VNF.
+   * \return The pair of applications
    */
-  //\{
-  Ptr<VnfApp> CreateServerApp (void);
-  Ptr<VnfApp> CreateSwitchApp (void);
-  //\}
-
-  /**
-   * Notify about a new copy of this VNF created in the network.
-   * \param serverApp The VNF app on the server switch.
-   * \param serverDevice The server switch node.
-   * \param serverPort The port number for app in server switch.
-   * \param switchApp The VNF app on the network switch.
-   * \param switchDevice The network switch node.
-   * \param switchPort The port number for app in network switch.
-   */
-  void NewVnfCopy (
-    Ptr<VnfApp> serverApp, Ptr<OFSwitch13Device> serverDevice, uint32_t serverPort,
-    Ptr<VnfApp> switchApp, Ptr<OFSwitch13Device> switchDevice, uint32_t switchPort);
+  std::pair<Ptr<VnfApp>, Ptr<VnfApp>> CreateVnfApps (void);
 
   /**
    * Get the VNF information from the global map for a specific VNF ID.
@@ -98,28 +77,19 @@ protected:
   virtual void DoDispose ();
 
 private:
-  uint32_t        m_vnfId;                //!< VNF ID
+  uint32_t        m_vnfId;            //!< VNF ID
+  Ipv4Address     m_vnfIpAddress;     //!< VNF IPv4 address
+  Mac48Address    m_vnfMacAddress;    //!< VNF MAC address
+  double          m_1stScaling;       //!< 1st scaling factor (switch)
+  double          m_2ndScaling;       //!< 2nd scaling factor (server)
 
-  Ipv4Address     m_serverIpAddress;      //!< VNF app IP on the server node
-  Ipv4Address     m_switchIpAddress;      //!< VNF app IP on the switch node
-  Mac48Address    m_serverMacAddress;     //!< VNF app MAC on the server node
-  Mac48Address    m_switchMacAddress;     //!< VNF app MAC on the switch node
-  double          m_serverScaling;        //!< Scaling factor at the server
-  double          m_switchScaling;        //!< Scaling factor at the switch
-
-  ObjectFactory   m_serverFactory;        //!< Factory for server apps
-  ObjectFactory   m_switchFactory;        //!< Factory for switch apps
+  ObjectFactory   m_1stFactory;       //!< Factory for the first app (switch)
+  ObjectFactory   m_2ndFactory;       //!< Factory for the second app (server)
 
   /** List of VNF copies */
   typedef std::vector<Ptr<VnfApp>> VnfAppList_t;
-  typedef std::vector<uint16_t> PortNoList_t;
-  VnfAppList_t              m_serverAppList;  //!< List of apps on servers nodes
-  VnfAppList_t              m_switchAppList;  //!< List of apps on switches nodes
-  OFSwitch13DeviceContainer m_serverDevList;  //!< List of server devices
-  OFSwitch13DeviceContainer m_switchDevList;  //!< List of switch devices
-  PortNoList_t              m_serverPortList; //!< List of ports on server nodes
-  PortNoList_t              m_switchPortList; //!< List of ports on switch nodes
-  int                       m_activeCopyIdx;  //!< Index of the active copy
+  VnfAppList_t    m_1stAppList;       //!< List of 1st apps (switches)
+  VnfAppList_t    m_2ndAppList;       //!< List of 2nd apps (servers)
 
   /**
    * Register the VNF information in global map for further usage.
@@ -128,7 +98,7 @@ private:
   static void RegisterVnfInfo (Ptr<VnfInfo> vnfInfo);
 
   /** Map saving VNF ID / VNF information. */
-  typedef std::map<uint32_t, Ptr<VnfInfo> > VnfInfoMap_t;
+  typedef std::map<uint32_t, Ptr<VnfInfo>> VnfInfoMap_t;
   static VnfInfoMap_t m_vnfInfoById;  //!< Global VNF info map.
 };
 

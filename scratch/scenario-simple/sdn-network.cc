@@ -172,21 +172,21 @@ SdnNetwork::ConfigureFunctions (void)
 
   // Create and configure the VNF (ID 1).
   Ptr<VnfInfo> vnfInfo1 = CreateObject<VnfInfo> (1);
-  vnfInfo1->SetSwitchScaling (1.5);
-  vnfInfo1->SetServerScaling (1/1.5);
-  m_controllerApp->NotifyNewVnf (vnfInfo1);
+  vnfInfo1->Set1stScaling (1.5);
+  vnfInfo1->Set2ndScaling (1/1.5);
+  SdnController::SaveArpEntry (vnfInfo1->GetIpAddr (), vnfInfo1->GetMacAddr ());
 
   // Install a copy of this VNF in the switch and server nodes
-  InstallVnfCopy (m_serverNode, m_serverDevice, m_switchNode, m_switchDevice, vnfInfo1);
+  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode, m_serverDevice, vnfInfo1);
 
   // Create and configure the VNF (ID 1).
   Ptr<VnfInfo> vnfInfo2 = CreateObject<VnfInfo> (2);
-  vnfInfo2->SetSwitchScaling (3);
-  vnfInfo2->SetServerScaling (0.8);
-  m_controllerApp->NotifyNewVnf (vnfInfo2);
+  vnfInfo2->Set1stScaling (3);
+  vnfInfo2->Set2ndScaling (0.8);
+  SdnController::SaveArpEntry (vnfInfo1->GetIpAddr (), vnfInfo1->GetMacAddr ());
 
   // Install a copy of this VNF in the switch and server nodes
-  InstallVnfCopy (m_serverNode, m_serverDevice, m_switchNode, m_switchDevice, vnfInfo2);
+  InstallVnfCopy (m_switchNode, m_switchDevice, m_serverNode, m_serverDevice, vnfInfo2);
 }
 
 void
@@ -215,41 +215,35 @@ SdnNetwork::ConfigureApplications (void)
 
 void
 SdnNetwork::InstallVnfCopy (
-  Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
   Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
+  Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
   Ptr<VnfInfo> vnfInfo)
 {
   NS_LOG_FUNCTION (this << serverNode << serverDevice <<
                    switchNode << switchDevice << vnfInfo);
 
-  // First, install the application on the server switch
-  // Create the virtual net device to work as the logical port on the switch.
-  Ptr<VirtualNetDevice> virtualDevServer = CreateObject<VirtualNetDevice> ();
-  virtualDevServer->SetAddress (vnfInfo->GetServerMacAddr ());
-  Ptr<OFSwitch13Port> logicalPortServer = serverDevice->AddSwitchPort (virtualDevServer);
-  m_portDevices.Add (virtualDevServer);
+  // Create the pair of applications for this VNF
+  Ptr<VnfApp> vnfApp1, vnfApp2;
+  std::tie (vnfApp1, vnfApp2) = vnfInfo->CreateVnfApps ();
 
-  // Create the VNF application.
-  Ptr<VnfApp> serverApp = vnfInfo->CreateServerApp ();
-  serverApp->SetVirtualDevice (virtualDevServer);
-  serverNode->AddApplication (serverApp);
+  // Install the first application on the network switch
+  Ptr<VirtualNetDevice> virtualDevice1 = CreateObject<VirtualNetDevice> ();
+  virtualDevice1->SetAddress (vnfInfo->GetMacAddr ());
+  Ptr<OFSwitch13Port> logicalPort1 = switchDevice->AddSwitchPort (virtualDevice1);
+  vnfApp1->SetVirtualDevice (virtualDevice1);
+  switchNode->AddApplication (vnfApp1);
 
-  // Then, install the application on the network switch
-  // Create the virtual net device to work as the logical port on the switch.
-  Ptr<VirtualNetDevice> virtualDevSwitch = CreateObject<VirtualNetDevice> ();
-  virtualDevSwitch->SetAddress (vnfInfo->GetSwitchMacAddr ());
-  Ptr<OFSwitch13Port> logicalPortSwitch = switchDevice->AddSwitchPort (virtualDevSwitch);
-  m_portDevices.Add (virtualDevSwitch);
-
-  // Create the VNF application.
-  Ptr<VnfApp> switchApp = vnfInfo->CreateSwitchApp ();
-  switchApp->SetVirtualDevice (virtualDevSwitch);
-  switchNode->AddApplication (switchApp);
+  // Install the second application on the server switch
+  Ptr<VirtualNetDevice> virtualDevice2 = CreateObject<VirtualNetDevice> ();
+  virtualDevice2->SetAddress (vnfInfo->GetMacAddr ());
+  Ptr<OFSwitch13Port> logicalPort2 = switchDevice->AddSwitchPort (virtualDevice2);
+  vnfApp2->SetVirtualDevice (virtualDevice2);
+  serverNode->AddApplication (vnfApp2);
 
   // Notify the controller about this new VNF copy
   m_controllerApp->NotifyVnfAttach (
-    serverDevice, logicalPortServer->GetPortNo (),
-    switchDevice, logicalPortSwitch->GetPortNo (),
+    switchDevice, logicalPort1->GetPortNo (),
+    serverDevice, logicalPort2->GetPortNo (),
     vnfInfo, 0); // FIXME
 }
 

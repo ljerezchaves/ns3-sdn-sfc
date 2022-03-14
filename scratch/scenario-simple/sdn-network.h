@@ -87,37 +87,79 @@ protected:
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.
   Ptr<OFSwitch13InternalHelper> m_switchHelper;     //!< Switch helper.
-  NetDeviceContainer            m_portDevices;      //!< Switch port devices.
+  NetDeviceContainer            m_portDevices;  //!< Switch port devices.
   NetDeviceContainer            m_hostDevices;      //!< Host devices.
 
 public:
-  Ptr<Node>                     m_switchNode;
-  Ptr<Node>                     m_serverNode1;
-  Ptr<Node>                     m_serverNode2;
-  Ptr<Node>                     m_host1Node;
-  Ptr<Node>                     m_host2Node;
+  Ptr<Node>                     m_coreSwitchNode;
+  Ptr<Node>                     m_edge1SwitchNode;
+  Ptr<Node>                     m_edge2SwitchNode;
+  Ptr<Node>                     m_coreServer1Node;
+  Ptr<Node>                     m_coreServer2Node;
+  Ptr<Node>                     m_edge1ServerNode;
+  Ptr<Node>                     m_edge2ServerNode;
+  Ptr<Node>                     m_coreHostNode;
+  Ptr<Node>                     m_edge1HostNode;
+  Ptr<Node>                     m_edge2HostNode;
 
-  Ipv4Address                   m_host1Address;
-  Ipv4Address                   m_host2Address;
+  Ipv4Address                   m_coreHostAddress;
+  Ipv4Address                   m_edge1HostAddress;
+  Ipv4Address                   m_edge2HostAddress;
 
-  Ptr<NetDevice>                m_host1Device;
-  Ptr<NetDevice>                m_host2Device;
+  Ptr<NetDevice>                m_coreHostDevice;
+  Ptr<NetDevice>                m_edge1HostDevice;
+  Ptr<NetDevice>                m_edge2HostDevice;
 
-  Ptr<OFSwitch13Device>         m_switchDevice;
-  Ptr<OFSwitch13Device>         m_serverDevice1;
-  Ptr<OFSwitch13Device>         m_serverDevice2;
+  Ptr<OFSwitch13Device>         m_coreSwitchDevice;
+  Ptr<OFSwitch13Device>         m_edge1SwitchDevice;
+  Ptr<OFSwitch13Device>         m_edge2SwitchDevice;
+  Ptr<OFSwitch13Device>         m_coreServer1Device;
+  Ptr<OFSwitch13Device>         m_coreServer2Device;
+  Ptr<OFSwitch13Device>         m_edge1ServerDevice;
+  Ptr<OFSwitch13Device>         m_edge2ServerDevice;
 
-  Ptr<OFSwitch13Port>           m_switchToHost1Port;
-  Ptr<OFSwitch13Port>           m_switchToHost2Port;
-  Ptr<OFSwitch13Port>           m_switchToServer1UlinkPort;
-  Ptr<OFSwitch13Port>           m_switchToServer1DlinkPort;
-  Ptr<OFSwitch13Port>           m_server1ToSwitchUlinkPort;
-  Ptr<OFSwitch13Port>           m_server1ToSwitchDlinkPort;
-  Ptr<OFSwitch13Port>           m_switchToServer2UlinkPort;
-  Ptr<OFSwitch13Port>           m_switchToServer2DlinkPort;
-  Ptr<OFSwitch13Port>           m_server2ToSwitchUlinkPort;
-  Ptr<OFSwitch13Port>           m_server2ToSwitchDlinkPort;
-};
-
+  Ptr<OFSwitch13Port>           m_coreToHostPort;
+  Ptr<OFSwitch13Port>           m_edge1ToHostPort;
+  Ptr<OFSwitch13Port>           m_edge2ToHostPort;
+  Ptr<OFSwitch13Port>           m_coreToEdge1APort;
+  Ptr<OFSwitch13Port>           m_edge1ToCoreAPort;
+  Ptr<OFSwitch13Port>           m_coreToEdge2APort;
+  Ptr<OFSwitch13Port>           m_edge2ToCoreAPort;
+  Ptr<OFSwitch13Port>           m_coreToEdge1BPort;
+  Ptr<OFSwitch13Port>           m_edge1ToCoreBPort;
+  Ptr<OFSwitch13Port>           m_coreToEdge2BPort;
+  Ptr<OFSwitch13Port>           m_edge2ToCoreBPort;
+  Ptr<OFSwitch13Port>           m_edge1ToEdge2Port;
+  Ptr<OFSwitch13Port>           m_edge2ToEdge1Port;
+  Ptr<OFSwitch13Port>           m_coreToServer1UlinkPort;
+  Ptr<OFSwitch13Port>           m_coreToServer1DlinkPort;
+  Ptr<OFSwitch13Port>           m_coreToServer2UlinkPort;
+  Ptr<OFSwitch13Port>           m_coreToServer2DlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToCoreUlinkPort;
+  Ptr<OFSwitch13Port>           m_server1ToCoreDlinkPort;
+  Ptr<OFSwitch13Port>           m_server2ToCoreUlinkPort;
+  Ptr<OFSwitch13Port>           m_server2ToCoreDlinkPort;
+  Ptr<OFSwitch13Port>           m_edge1ToServerUlinkPort;
+  Ptr<OFSwitch13Port>           m_edge1ToServerDlinkPort;
+  Ptr<OFSwitch13Port>           m_edge2ToServerUlinkPort;
+  Ptr<OFSwitch13Port>           m_edge2ToServerDlinkPort;
+  Ptr<OFSwitch13Port>           m_serverToEdge1UlinkPort;
+  Ptr<OFSwitch13Port>           m_serverToEdge1DlinkPort;
+  Ptr<OFSwitch13Port>           m_serverToEdge2UlinkPort;
+  Ptr<OFSwitch13Port>           m_serverToEdge2DlinkPort;
+  
+  Ptr<CsmaChannel>              m_coreToServer1Ulink1Channel;
+  Ptr<CsmaChannel>              m_coreToServer2Ulink1Channel;
+  Ptr<CsmaChannel>              m_edge1ToServerUlink1Channel;
+  Ptr<CsmaChannel>              m_edge2ToServerUlink1Channel;
+  Ptr<CsmaChannel>              m_coreToServer1Ulink2Channel;
+  Ptr<CsmaChannel>              m_coreToServer2Ulink2Channel;
+  Ptr<CsmaChannel>              m_edge1ToServerUlink2Channel;
+  Ptr<CsmaChannel>              m_edge2ToServerUlink2Channel;
+  Ptr<CsmaChannel>              m_coreToServer1Ulink3Channel;
+  Ptr<CsmaChannel>              m_coreToServer2Ulink3Channel;
+  Ptr<CsmaChannel>              m_edge1ToServerUlink3Channel;
+  Ptr<CsmaChannel>              m_edge2ToServerUlink3Channel;
+};    
 } // namespace ns3
 #endif /* SDN_NETWORK_H */

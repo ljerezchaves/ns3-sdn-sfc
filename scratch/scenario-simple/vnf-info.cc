@@ -27,8 +27,8 @@ VnfInfo::VnfInfoMap_t VnfInfo::m_vnfInfoById;
 
 VnfInfo::VnfInfo (uint32_t vnfId)
   : m_vnfId (vnfId),
-  m_1stScaling (1),
-  m_2ndScaling (1)
+  m_csf (1),
+  m_nsf (1)
 {
   NS_LOG_FUNCTION (this);
   NS_ASSERT_MSG (m_vnfId > 0, "VNF ID 0 not allowed.");
@@ -96,48 +96,41 @@ VnfInfo::GetMacAddr (void) const
 }
 
 double
-VnfInfo::Get1stScaling (void) const
+VnfInfo::GetCsf (void) const
 {
   NS_LOG_FUNCTION (this);
 
-  return m_1stScaling;
+  return m_csf;
 }
 
 double
-VnfInfo::Get2ndScaling (void) const
+VnfInfo::GetNsf (void) const
 {
   NS_LOG_FUNCTION (this);
 
-  return m_2ndScaling;
+  return m_nsf;
 }
 
 void
-VnfInfo::Set1stScaling (double value)
+VnfInfo::SetScalingFactors (double csf, double nsf)
 {
-  NS_LOG_FUNCTION (this << value);
+  NS_LOG_FUNCTION (this << csf << nsf);
 
   // Update the PktSizeScalingFactor attribute in all applications that have
   // already been created and on the application factory.
-  m_1stScaling = value;
-  m_1stFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
+  m_csf = csf;
+  m_nsf = nsf;
+
+  m_1stFactory.Set ("PktSizeScalingFactor", DoubleValue (m_csf));
   for (auto &app : m_1stAppList)
     {
-      app->SetAttribute ("PktSizeScalingFactor", DoubleValue (value));
+      app->SetAttribute ("PktSizeScalingFactor", DoubleValue (m_csf));
     }
-}
 
-void
-VnfInfo::Set2ndScaling (double value)
-{
-  NS_LOG_FUNCTION (this << value);
-
-  // Update the PktSizeScalingFactor attribute in all applications that have
-  // already been created and on the application factory.
-  m_2ndScaling = value;
-  m_2ndFactory.Set ("PktSizeScalingFactor", DoubleValue (value));
+  m_2ndFactory.Set ("PktSizeScalingFactor", DoubleValue (m_nsf / m_csf));
   for (auto &app : m_2ndAppList)
     {
-      app->SetAttribute ("PktSizeScalingFactor", DoubleValue (value));
+      app->SetAttribute ("PktSizeScalingFactor", DoubleValue (m_nsf / m_csf));
     }
 }
 

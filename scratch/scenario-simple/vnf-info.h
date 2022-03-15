@@ -46,18 +46,22 @@ public:
 
   /**
    * \name Private member accessors for VNF information.
-   * \param value The value to set.
    * \return The requested information.
    */
   //\{
   uint32_t      GetVnfId      (void) const;
   Ipv4Address   GetIpAddr     (void) const;
   Mac48Address  GetMacAddr    (void) const;
-  double        Get1stScaling (void) const;
-  double        Get2ndScaling (void) const;
-  void          Set1stScaling (double value);
-  void          Set2ndScaling (double value);
+  double        GetCsf        (void) const;
+  double        GetNsf        (void) const;
   //\}
+
+  /**
+   * Set the CSF and NSF values.
+   * \param csf The computation scaling factor.
+   * \param nsf The network scaling factor.
+   */
+  void SetScalingFactors (double csf, double nsf);
 
   /**
    * Create the pair of applications for this VNF.
@@ -80,8 +84,8 @@ private:
   uint32_t        m_vnfId;            //!< VNF ID
   Ipv4Address     m_vnfIpAddress;     //!< VNF IPv4 address
   Mac48Address    m_vnfMacAddress;    //!< VNF MAC address
-  double          m_1stScaling;       //!< 1st scaling factor (switch)
-  double          m_2ndScaling;       //!< 2nd scaling factor (server)
+  double          m_csf;              //!< Computation scaling factor (switch)
+  double          m_nsf;              //!< Network scaling factor (server)
 
   ObjectFactory   m_1stFactory;       //!< Factory for the first app (switch)
   ObjectFactory   m_2ndFactory;       //!< Factory for the second app (server)

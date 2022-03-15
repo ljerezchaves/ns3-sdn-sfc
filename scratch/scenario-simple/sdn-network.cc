@@ -314,18 +314,15 @@ SdnNetwork::ConfigureFunctions (void)
   // Configure the scaling factors for the VNFs.
   // VNF 1: network service
   Ptr<VnfInfo> vnfInfo1 = VnfInfo::GetPointer (1);
-  vnfInfo1->Set1stScaling (0.3);
-  vnfInfo1->Set2ndScaling (0.9 / 0.3);
+  vnfInfo1->SetScalingFactors (0.3, 0.9);
 
   // VNF 2 : compression service
   Ptr<VnfInfo> vnfInfo2 = VnfInfo::GetPointer (2);
-  vnfInfo2->Set1stScaling (2.2);
-  vnfInfo2->Set2ndScaling (0.7 / 2.2);
+  vnfInfo2->SetScalingFactors (2.2, 0.7);
 
   // VNF 2 : expansion service
   Ptr<VnfInfo> vnfInfo3 = VnfInfo::GetPointer (3);
-  vnfInfo3->Set1stScaling (1.4);
-  vnfInfo3->Set2ndScaling (1.8 / 1.4);
+  vnfInfo3->SetScalingFactors (1.4, 1.8);
 
   // Initial activations of VNFs.
   m_controllerApp->ActivateVnf (m_core1SwitchDevice, vnfInfo1, 1);

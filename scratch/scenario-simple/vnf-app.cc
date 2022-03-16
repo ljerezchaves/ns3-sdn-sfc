@@ -65,10 +65,10 @@ VnfApp::GetTypeId (void)
                    MakeUintegerAccessor (&VnfApp::m_udpPort),
                    MakeUintegerChecker<uint16_t> ())
 
-    .AddAttribute ("PktSizeScalingFactor",
-                   "A scaling factor for the packet size.",
+    .AddAttribute ("ScalingFactor",
+                   "A scaling factor for the traffic throughput.",
                    DoubleValue (1.0),
-                   MakeDoubleAccessor (&VnfApp::m_pktSizeScale),
+                   MakeDoubleAccessor (&VnfApp::m_scalingFactor),
                    MakeDoubleChecker<double> ())
   ;
   return tid;
@@ -99,7 +99,7 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
                " received a packet of " << inPacket->GetSize () << " bytes.");
 
   // Create a new output packet with adjusted size.
-  int newPacketSize = inPacket->GetSize () * m_pktSizeScale;
+  int newPacketSize = inPacket->GetSize () * m_scalingFactor;
   Ptr<Packet> outPacket = Create<Packet> (newPacketSize);
   // FIXME: Ethernet packet payload cannot exceed 1464 bytes: fragment it here.
 

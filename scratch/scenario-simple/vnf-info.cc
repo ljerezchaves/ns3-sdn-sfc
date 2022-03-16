@@ -116,21 +116,21 @@ VnfInfo::SetScalingFactors (double csf, double nsf)
 {
   NS_LOG_FUNCTION (this << csf << nsf);
 
-  // Update the PktSizeScalingFactor attribute in all applications that have
+  // Update the ScalingFactor attribute in all applications that have
   // already been created and on the application factory.
   m_csf = csf;
   m_nsf = nsf;
 
-  m_1stFactory.Set ("PktSizeScalingFactor", DoubleValue (m_csf));
+  m_1stFactory.Set ("ScalingFactor", DoubleValue (m_csf));
   for (auto &app : m_1stAppList)
     {
-      app->SetAttribute ("PktSizeScalingFactor", DoubleValue (m_csf));
+      app->SetAttribute ("ScalingFactor", DoubleValue (m_csf));
     }
 
-  m_2ndFactory.Set ("PktSizeScalingFactor", DoubleValue (m_nsf / m_csf));
+  m_2ndFactory.Set ("ScalingFactor", DoubleValue (m_nsf / m_csf));
   for (auto &app : m_2ndAppList)
     {
-      app->SetAttribute ("PktSizeScalingFactor", DoubleValue (m_nsf / m_csf));
+      app->SetAttribute ("ScalingFactor", DoubleValue (m_nsf / m_csf));
     }
 }
 

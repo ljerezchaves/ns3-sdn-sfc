@@ -26,7 +26,7 @@ namespace ns3 {
 /**
  * This application implements an intermediate VNF for packet processing. In
  * fact, this application does not with the packet except for resizing it based
- * on the PktSizeScalingFactor attribute. Each packet received by this
+ * on the ScalingFactor attribute. Each packet received by this
  * application must carry a SFC tag, from which we will get the next address in
  * the VNF chain to send the packet to. When the KeepAddress attribute is set to
  * true, this application doesn't change packet destination address. This is
@@ -96,7 +96,7 @@ private:
   uint16_t              m_udpPort;          //!< Local UDP port.
   bool                  m_keepAddress;      //!< Keep VNF address.
 
-  double                m_pktSizeScale;     //!< Packet size scaling factor.
+  double                m_scalingFactor;    //!< Packet size scaling factor.
   EventId               m_sendEvent;        //!< SendPacket event.
 
   Ptr<VirtualNetDevice> m_logicalPort;      //!< OpenFlow logical port device.

@@ -73,9 +73,10 @@ protected:
 
   /**
    * Remove and check the IPv4 and UDP headers from the incoming packet.
-   * \param packet The incoming packet
+   * \param packet The incoming packet.
+   * \return The sender address.
    */
-  void RemoveHeaders (Ptr<Packet> packet);
+  InetSocketAddress RemoveHeaders (Ptr<Packet> packet);
 
   /**
    * Insert the UDP, IPv4 and Ethernet headers into the output packet.
@@ -92,6 +93,7 @@ protected:
 
 private:
   uint32_t              m_vnfId;            //!< VNF ID.
+  uint32_t              m_vnfCopy;          //!< VNF copy.
   Ipv4Address           m_ipv4Address;      //!< Local IPv4 address.
   uint16_t              m_udpPort;          //!< Local UDP port.
   bool                  m_keepAddress;      //!< Keep VNF address.

@@ -327,18 +327,18 @@ SdnNetwork::ConfigureApplications (void)
   Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
   sourceApp->SetStartTime (Seconds (1));
   sourceApp->SetLocalUdpPort (portNo);
-  sourceApp->SetFinalIpAddress (m_edge1HostAddress);
-  sourceApp->SetFinalUdpPort (portNo);
+  sourceApp->SetFinalIpAddress (m_core0HostAddress);
+  sourceApp->SetFinalUdpPort (portNo + 1);
   m_core0HostNode->AddApplication (sourceApp);
 
   // Configure the sink application on host 2.
   Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
-  sinkApp->SetLocalUdpPort (portNo);
+  sinkApp->SetLocalUdpPort (portNo + 1);
   sinkApp->SetStartTime (Seconds (0));
-  m_edge1HostNode->AddApplication (sinkApp);
+  m_core0HostNode->AddApplication (sinkApp);
 
-  // SFC: host 1 --> VNF 1 --> VNF 2 --> host 2.
-  sourceApp->SetVnfList ({1, 2, 3});
+  // SFC: host --> VNF 1 --> VNF 3 --> VNF 2 --> host.
+  sourceApp->SetVnfList ({1, 3, 2});
 }
 
 void

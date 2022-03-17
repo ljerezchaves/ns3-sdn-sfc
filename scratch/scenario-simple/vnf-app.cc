@@ -48,6 +48,11 @@ VnfApp::GetTypeId (void)
                    UintegerValue (0),
                    MakeUintegerAccessor (&VnfApp::m_vnfId),
                    MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("VnfCopy", "VNF copy number.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
+                   UintegerValue (0),
+                   MakeUintegerAccessor (&VnfApp::m_vnfCopy),
+                   MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("KeepAddress", "Keep the VNF addresses.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    BooleanValue (false),
@@ -94,9 +99,15 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
   // the application).
 
   // Each packet gets here with IP and UDP headers. Let's remove them first
-  RemoveHeaders (inPacket);
-  NS_LOG_INFO ("VNF " << m_vnfId << " at node " << GetNode () <<
-               " received a packet of " << inPacket->GetSize () << " bytes.");
+  InetSocketAddress fromAddr = RemoveHeaders (inPacket);
+  SfcTag sfcTag;
+  inPacket->PeekPacketTag (sfcTag);
+  NS_LOG_INFO ("VNF " << m_vnfId
+               << " copy " << m_vnfCopy
+               << " received a packet of " << inPacket->GetSize ()
+               << " bytes from IP " << fromAddr.GetIpv4 ()
+               << " port " << fromAddr.GetPort ()
+               << " with traffic ID " << sfcTag.GetTrafficId ());
 
   // Create a new output packet with adjusted size.
   int newPacketSize = inPacket->GetSize () * m_scalingFactor;
@@ -104,8 +115,6 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
   // FIXME: Ethernet packet payload cannot exceed 1464 bytes: fragment it here.
 
   // Copy the SFC tag from the incoming to the outcoming packet
-  SfcTag sfcTag;
-  inPacket->PeekPacketTag (sfcTag);
   InetSocketAddress nextAddress (Ipv4Address::GetAny ());
   if (m_keepAddress)
     {
@@ -121,9 +130,12 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
     }
   outPacket->AddPacketTag (sfcTag);
 
-  NS_LOG_INFO ("VNF " << m_vnfId << " at node " << GetNode () <<
-               " will send a packet of " << outPacket->GetSize () << " bytes to IP "
-               << nextAddress.GetIpv4 () << " port " << nextAddress.GetPort ());
+  NS_LOG_INFO ("VNF " << m_vnfId
+               << " copy " << m_vnfCopy
+               << " will send a packet of " << inPacket->GetSize ()
+               << " bytes to IP " << nextAddress.GetIpv4 ()
+               << " port " << nextAddress.GetPort ()
+               << " with traffic ID " << sfcTag.GetTrafficId ());
 
   // Insert UDP, IPv4 and Ethernet headers into the output packet.
   Mac48Address nextMacAddr = SdnController::GetArpEntry (nextAddress.GetIpv4 ());
@@ -146,7 +158,7 @@ VnfApp::DoDispose (void)
   Application::DoDispose ();
 }
 
-void
+InetSocketAddress
 VnfApp::RemoveHeaders (Ptr<Packet> packet)
 {
   NS_LOG_FUNCTION (this << packet);
@@ -184,6 +196,9 @@ VnfApp::RemoveHeaders (Ptr<Packet> packet)
 
   NS_ASSERT_MSG (ipHeader.GetDestination () == m_ipv4Address, "Inconsistent IP address.");
   NS_ASSERT_MSG (udpHeader.GetDestinationPort () == m_udpPort, "Inconsistente UDP port.");
+
+  // Return the sender address.
+  return InetSocketAddress (ipHeader.GetSource (), udpHeader.GetSourcePort ());
 }
 
 void

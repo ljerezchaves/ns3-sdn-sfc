@@ -93,6 +93,9 @@ private:
   Ptr<RandomVariableStream>   m_pktInterRng;    //!< Packet inter-arrival time.
   Ptr<RandomVariableStream>   m_pktSizeRng;     //!< Packet size.
   EventId                     m_sendEvent;      //!< SendPacket event.
+
+  uint16_t                    m_trafficId;      //!< Traffic ID for this app.
+  static uint16_t             m_trafficCounter; //!< Global traffic ID counter.
 };
 
 } // namespace ns3

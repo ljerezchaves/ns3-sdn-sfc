@@ -23,9 +23,13 @@ namespace ns3 {
 NS_LOG_COMPONENT_DEFINE ("SourceApp");
 NS_OBJECT_ENSURE_REGISTERED (SourceApp);
 
+// Static traffic ID counter.
+uint16_t SourceApp::m_trafficCounter = 0;
+
 SourceApp::SourceApp ()
   : m_socket (0),
-  m_sendEvent (EventId ())
+  m_sendEvent (EventId ()),
+  m_trafficId (m_trafficCounter++)
 {
   NS_LOG_FUNCTION (this);
 }
@@ -157,15 +161,18 @@ SourceApp::SendPacket (uint32_t size)
   Ptr<Packet> packet = Create<Packet> (size);
 
   // Create the SFC packet tag and identify the next address based on the tag.
-  SfcTag sfcTag (m_vnfList, InetSocketAddress (m_finalIpAddress, m_finalUdpPort));
+  InetSocketAddress finalAddress (m_finalIpAddress, m_finalUdpPort);
+  SfcTag sfcTag (m_trafficId, m_vnfList, finalAddress);
   InetSocketAddress nextAddress (sfcTag.GetNextAddress ());
   packet->AddPacketTag (sfcTag);
 
   int bytes = m_socket->SendTo (packet, 0, nextAddress);
   if (bytes == static_cast<int> (packet->GetSize ()))
     {
-      NS_LOG_INFO ("Source app transmitted a packet of " << bytes << " bytes to IP "
-                   << nextAddress.GetIpv4 () << " port " << nextAddress.GetPort ());
+      NS_LOG_INFO ("Source app transmitted a packet of " << bytes
+                   << " bytes to IP " << nextAddress.GetIpv4 ()
+                   << " port " << nextAddress.GetPort ()
+                   << " with traffic ID " << m_trafficId);
     }
 
   // Schedule the next packet transmission.

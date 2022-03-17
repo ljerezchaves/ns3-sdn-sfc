@@ -27,6 +27,7 @@ VnfInfo::VnfInfoMap_t VnfInfo::m_vnfInfoById;
 
 VnfInfo::VnfInfo (uint32_t vnfId)
   : m_vnfId (vnfId),
+  m_copyCounter (0),
   m_csf (1),
   m_nsf (1)
 {
@@ -139,6 +140,12 @@ VnfInfo::CreateVnfApps (void)
 {
   NS_LOG_FUNCTION (this);
 
+  // Update the VNF copy counter.
+  m_1stFactory.Set ("VnfCopy", UintegerValue (m_copyCounter));
+  m_2ndFactory.Set ("VnfCopy", UintegerValue (m_copyCounter));
+  m_copyCounter++;
+
+  // Create and return the applications.
   std::pair<Ptr<VnfApp>, Ptr<VnfApp>> apps;
   apps.first = m_1stFactory.Create ()->GetObject<VnfApp> ();
   apps.second = m_2ndFactory.Create ()->GetObject<VnfApp> ();

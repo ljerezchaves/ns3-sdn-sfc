@@ -82,6 +82,7 @@ protected:
 
 private:
   uint32_t        m_vnfId;            //!< VNF ID
+  uint32_t        m_copyCounter;      //!< VNF copy counter
   Ipv4Address     m_vnfIpAddress;     //!< VNF IPv4 address
   Mac48Address    m_vnfMacAddress;    //!< VNF MAC address
   double          m_csf;              //!< Computation scaling factor (switch)

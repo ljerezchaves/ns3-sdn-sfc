@@ -116,11 +116,11 @@ VnfInfo::SetScalingFactors (double csf, double nsf)
 {
   NS_LOG_FUNCTION (this << csf << nsf);
 
-  // Update the ScalingFactor attribute in all applications that have
-  // already been created and on the application factory.
   m_csf = csf;
   m_nsf = nsf;
 
+  // Update the ScalingFactor attribute in all applications that have
+  // already been created and on the application factories.
   m_1stFactory.Set ("ScalingFactor", DoubleValue (m_csf));
   for (auto &app : m_1stAppList)
     {

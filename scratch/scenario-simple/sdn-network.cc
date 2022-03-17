@@ -45,6 +45,7 @@ SdnNetwork::GetTypeId (void)
     .SetParent<Object> ()
     .AddConstructor<SdnNetwork> ()
     .AddAttribute ("NumberVnfs", "Total number of VNFs in this scenario.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (3),
                    MakeUintegerAccessor (&SdnNetwork::m_numVnfs),
                    MakeUintegerChecker<uint16_t> ());

@@ -43,14 +43,17 @@ SourceApp::GetTypeId (void)
     .AddConstructor<SourceApp> ()
 
     .AddAttribute ("LocalUdpPort", "Local UDP port.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (10000),
                    MakeUintegerAccessor (&SourceApp::m_localUdpPort),
                    MakeUintegerChecker<uint16_t> ())
     .AddAttribute ("FinalIpAddress", "Final IPv4 address.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    Ipv4AddressValue (),
                    MakeIpv4AddressAccessor (&SourceApp::m_finalIpAddress),
                    MakeIpv4AddressChecker ())
     .AddAttribute ("FinalUdpPort", "Final UDP port.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (10000),
                    MakeUintegerAccessor (&SourceApp::m_finalUdpPort),
                    MakeUintegerChecker<uint16_t> ())

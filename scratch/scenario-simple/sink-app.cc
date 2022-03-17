@@ -41,6 +41,7 @@ SinkApp::GetTypeId (void)
     .AddConstructor<SinkApp> ()
 
     .AddAttribute ("LocalUdpPort", "Local UDP port.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (10000),
                    MakeUintegerAccessor (&SinkApp::m_localUdpPort),
                    MakeUintegerChecker<uint16_t> ())

@@ -87,23 +87,22 @@ SdnController::NotifyVnfAttach (
   Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
   Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
   uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
-  Ptr<VnfInfo> vnfInfo, int serverId)
+  Ptr<VnfInfo> vnfInfo)
 {
-  NS_LOG_FUNCTION (this << serverDevice << serverPortNo << switchDevice
-                   << switchPortNo << vnfInfo << serverId);
+  NS_LOG_FUNCTION (this << serverDevice << serverPortNo << switchDevice <<
+                   switchPortNo << vnfInfo);
 
-  // To deal with several servers connected to the same network switch, our
-  // strategy is to install the rules for each server in a different pipeline
-  // tables (identified by the server ID, which starts at 1). Thus, to activate
-  // or deactivate the VNF in a switch/server pair, it is enough to adjust a
+  // To deal with copies of the same VNF in all servers, our strategy is to
+  // install the fowarding rules in a different pipeline tables (table 1). Thus,
+  // to activate or deactivate the VNF in a server, it is enough to adjust a
   // flow rule in table 0 at network switch to send the packets addressed to the
-  // VNF to the correct server table.
+  // VNF to the table 1.
 
   // Packets addressed to the VNF entering the server table on network switch:
   // -> send to the logical port connected to the 1st app
   {
     std::ostringstream cmd;
-    cmd << "flow-mod cmd=add,prio=1024,table=" << serverId
+    cmd << "flow-mod cmd=add,prio=1024,table=1"
         << ",flags="        << FLAGS_OVERLAP_RESET
         << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
         << ",ip_dst="       << vnfInfo->GetIpAddr ()
@@ -150,28 +149,27 @@ SdnController::NotifyVnfAttach (
 
 void
 SdnController::ActivateVnf (
-  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId)
+  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo)
 {
-  NS_LOG_FUNCTION (this << switchDevice << vnfInfo << serverId);
+  NS_LOG_FUNCTION (this << switchDevice << vnfInfo);
 
-  // This rule sends the packets addressed to the VNF to the pipeline table
-  // assigned to the server identifier.
+  // This rule sends the packets addressed to the VNF to the pipeline table 1.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=add,prio=1024,table=0"
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
       << ",ip_dst="       << vnfInfo->GetIpAddr ()
-      << " goto:"         << serverId;
+      << " goto:1";
   DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
 }
 
 void
 SdnController::DeactivateVnf (
-  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId)
+  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo)
 {
-  NS_LOG_FUNCTION (this << switchDevice << vnfInfo << serverId);
+  NS_LOG_FUNCTION (this << switchDevice << vnfInfo);
 
-  // Remove the rule that sends the packets addressed to the VNF to the pipeline
-  // table assigned to the server identifier.
+  // Remove the rule that sends the packets addressed to the VNF
+  // to the pipeline table 1.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=del,prio=1024,table=0"
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER

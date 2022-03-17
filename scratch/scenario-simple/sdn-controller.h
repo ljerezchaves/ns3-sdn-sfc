@@ -62,31 +62,26 @@ public:
    * \param switchToServerPortNo The uplink port number from switch to server.
    * \param serverToSwitchPortNo The downlink port number from server to switch.
    * \param vnfInfo The VNF information.
-   * \param serverId The server ID (for several servers on the same switch)
    */
   void NotifyVnfAttach (
     Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
     Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
     uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
-    Ptr<VnfInfo> vnfInfo, int serverId = 1);
+    Ptr<VnfInfo> vnfInfo);
 
   /**
    * Activate the VNF on the given switch device.
    * \param switchDevice The OpenFlow switch device
    * \param vnfInfo The VNF information
-   * \param serverId The server ID
    */
-  void ActivateVnf (
-    Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId = 1);
+  void ActivateVnf (Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo);
 
   /**
    * Deactivate the VNF on the given switch device
    * \param switchDevice The OpenFlow switch device
    * \param vnfInfo The VNF information
-   * \param serverId The server ID
    */
-  void DeactivateVnf (
-    Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId = 1);
+  void DeactivateVnf (Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo);
 
   /**
    * Perform an ARP resolution

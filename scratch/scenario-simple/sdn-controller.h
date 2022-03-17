@@ -44,22 +44,23 @@ public:
   void SetSdnNetwork (Ptr<SdnNetwork> network);
 
   /**
-   * Notify this controller of a host connected to an OpenFlow network switch.
-   * \param switchDev The OpenFlow network switch device.
-   * \param portNo The port number created at the OpenFlow network switch.
-   * \param hostDev The device created at the host node.
+   * Notify this controller of a host connected to the OpenFlow network.
+   * \param switchDevice The OpenFlow network switch device.
+   * \param switchPortNo The port number on the network switch device
+   * \param hostDevice The device created at the host node.
    */
   void NotifyHostAttach (
-    Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev);
+    Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
+    Ptr<NetDevice> hostDevice);
 
   /**
    * Notify this controller of a VNF connected to the OpenFlow network.
-   * \param switchDevice The OpenFlow network switch device
-   * \param switchPortNo The port number on the network switch device
-   * \param serverDevice The OpenFlow server switch device
-   * \param serverPortNo The port number on the server switch device
-   * \param switchToServerPortNo The uplink port number from switch to server
-   * \param serverToSwitchPortNo The downlink port number from server to switch
+   * \param switchDevice The OpenFlow network switch device.
+   * \param switchPortNo The port number on the network switch device.
+   * \param serverDevice The OpenFlow server switch device.
+   * \param serverPortNo The port number on the server switch device.
+   * \param switchToServerPortNo The uplink port number from switch to server.
+   * \param serverToSwitchPortNo The downlink port number from server to switch.
    * \param vnfInfo The VNF information.
    * \param serverId The server ID (for several servers on the same switch)
    */
@@ -67,7 +68,7 @@ public:
     Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
     Ptr<OFSwitch13Device> serverDevice, uint32_t serverPortNo,
     uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
-    Ptr<VnfInfo> vnfInfo, int serverId);
+    Ptr<VnfInfo> vnfInfo, int serverId = 1);
 
   /**
    * Activate the VNF on the given switch device.
@@ -76,7 +77,7 @@ public:
    * \param serverId The server ID
    */
   void ActivateVnf (
-    Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId);
+    Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId = 1);
 
   /**
    * Deactivate the VNF on the given switch device
@@ -85,7 +86,7 @@ public:
    * \param serverId The server ID
    */
   void DeactivateVnf (
-    Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId);
+    Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo, int serverId = 1);
 
   /**
    * Perform an ARP resolution

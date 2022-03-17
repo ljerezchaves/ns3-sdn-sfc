@@ -281,7 +281,7 @@ SdnNetwork::ConfigureFunctions (void)
       m_portDevices.Add (csmaDevices);
       m_core1Server1VnfLinks.push_back (DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ()));
       InstallVnfCopy (m_core1SwitchNode, m_core1SwitchDevice, m_core1Server1Node, m_core1Server1Device,
-                      m_core1ToServer1VnfPorts.back ()->GetPortNo (), m_server1ToCore1DlinkPort->GetPortNo (), vnfInfo, 1);
+                      m_core1ToServer1VnfPorts.back ()->GetPortNo (), m_server1ToCore1DlinkPort->GetPortNo (), vnfInfo);
 
       // Server 2 at core 1.
       csmaDevices = csmaHelper.Install (m_core1SwitchNode, m_core1Server2Node);
@@ -290,7 +290,7 @@ SdnNetwork::ConfigureFunctions (void)
       m_portDevices.Add (csmaDevices);
       m_core1Server2VnfLinks.push_back (DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ()));
       InstallVnfCopy (m_core1SwitchNode, m_core1SwitchDevice, m_core1Server2Node, m_core1Server2Device,
-                      m_core1ToServer2VnfPorts.back ()->GetPortNo (), m_server2ToCore1DlinkPort->GetPortNo (), vnfInfo, 2);
+                      m_core1ToServer2VnfPorts.back ()->GetPortNo (), m_server2ToCore1DlinkPort->GetPortNo (), vnfInfo);
 
       // Server 1 at edge 1.
       csmaDevices = csmaHelper.Install (m_edge1SwitchNode, m_edge1Server1Node);
@@ -299,7 +299,7 @@ SdnNetwork::ConfigureFunctions (void)
       m_portDevices.Add (csmaDevices);
       m_edge1Server1VnfLinks.push_back (DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ()));
       InstallVnfCopy (m_edge1SwitchNode, m_edge1SwitchDevice, m_edge1Server1Node, m_edge1Server1Device,
-                      m_edge1ToServer1VnfPorts.back ()->GetPortNo (), m_server1ToEdge1DlinkPort->GetPortNo (), vnfInfo, 1);
+                      m_edge1ToServer1VnfPorts.back ()->GetPortNo (), m_server1ToEdge1DlinkPort->GetPortNo (), vnfInfo);
 
       // Server 1 at edge 2.
       csmaDevices = csmaHelper.Install (m_edge2SwitchNode, m_edge2Server1Node);
@@ -308,7 +308,7 @@ SdnNetwork::ConfigureFunctions (void)
       m_portDevices.Add (csmaDevices);
       m_edge2Server1VnfLinks.push_back (DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ()));
       InstallVnfCopy (m_edge2SwitchNode, m_edge2SwitchDevice, m_edge2Server1Node, m_edge2Server1Device,
-                      m_edge2ToServer1VnfPorts.back ()->GetPortNo (), m_server1ToEdge2DlinkPort->GetPortNo (), vnfInfo, 1);
+                      m_edge2ToServer1VnfPorts.back ()->GetPortNo (), m_server1ToEdge2DlinkPort->GetPortNo (), vnfInfo);
     }
 
   // Configure the scaling factors for the VNFs.

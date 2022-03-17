@@ -82,7 +82,7 @@ protected:
     Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
     Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
     uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
-    Ptr<VnfInfo> vnfInfo, int serverId);
+    Ptr<VnfInfo> vnfInfo, int serverId = 1);
 
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.

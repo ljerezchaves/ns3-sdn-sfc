@@ -62,13 +62,14 @@ SdnController::SetSdnNetwork (Ptr<SdnNetwork> network)
 
 void
 SdnController::NotifyHostAttach (
-  Ptr<OFSwitch13Device> switchDev, uint32_t portNo, Ptr<NetDevice> hostDev)
+  Ptr<OFSwitch13Device> switchDevice, uint32_t switchPortNo,
+  Ptr<NetDevice> hostDevice)
 {
-  NS_LOG_FUNCTION (this << switchDev << portNo << hostDev);
+  NS_LOG_FUNCTION (this << switchDevice << switchPortNo << hostDevice);
 
   // Save host addresses for further ARP resolution.
-  Ipv4Address hostIpAddress = Ipv4AddressHelper::GetAddress (hostDev);
-  Mac48Address hostMacAddress = Mac48Address::ConvertFrom (hostDev->GetAddress ());
+  Ipv4Address hostIpAddress = Ipv4AddressHelper::GetAddress (hostDevice);
+  Mac48Address hostMacAddress = Mac48Address::ConvertFrom (hostDevice->GetAddress ());
   SaveArpEntry (hostIpAddress, hostMacAddress);
 
   // Foward IP packets addressed to this host to the right output port.
@@ -77,8 +78,8 @@ SdnController::NotifyHostAttach (
       << ",flags="        << FLAGS_OVERLAP_RESET
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
       << ",ip_dst="       << hostIpAddress
-      << " apply:output=" << portNo;
-  DpctlExecute (switchDev->GetDatapathId (), cmd.str ());
+      << " apply:output=" << switchPortNo;
+  DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
 }
 
 void

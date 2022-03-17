@@ -25,14 +25,16 @@ SfcTag::SfcTag ()
   : m_timestamp (Simulator::Now ().GetTimeStep ()),
   m_finalIp (0),
   m_finalPort (0),
+  m_trafficId (0),
   m_nVnfs (0),
   m_nextVnfIdx (0)
 {
   memset (m_listVnfs, 0, 8);
 }
 
-SfcTag::SfcTag (std::vector<uint8_t> vnfList, InetSocketAddress finalAddr)
+SfcTag::SfcTag (uint16_t trafficId, std::vector<uint8_t> vnfList, InetSocketAddress finalAddr)
   : m_timestamp (Simulator::Now ().GetTimeStep ()),
+  m_trafficId (trafficId),
   m_nVnfs (vnfList.size ()),
   m_nextVnfIdx (0)
 {
@@ -66,7 +68,7 @@ SfcTag::GetInstanceTypeId (void) const
 uint32_t
 SfcTag::GetSerializedSize (void) const
 {
-  return 24;
+  return 26;
 }
 
 void
@@ -75,6 +77,7 @@ SfcTag::Serialize (TagBuffer i) const
   i.WriteU64 (m_timestamp);
   i.WriteU32 (m_finalIp);
   i.WriteU16 (m_finalPort);
+  i.WriteU16 (m_trafficId);
   i.WriteU8  (m_nVnfs);
   i.WriteU8  (m_nextVnfIdx);
   i.Write    (m_listVnfs, 8);
@@ -86,6 +89,7 @@ SfcTag::Deserialize (TagBuffer i)
   m_timestamp   = i.ReadU64 ();
   m_finalIp     = i.ReadU32 ();
   m_finalPort   = i.ReadU16 ();
+  m_trafficId   = i.ReadU16 ();
   m_nVnfs       = i.ReadU8 ();
   m_nextVnfIdx  = i.ReadU8 ();
   i.Read (m_listVnfs, 8);
@@ -97,6 +101,7 @@ SfcTag::Print (std::ostream &os) const
   os << "SfcTag=(timestamp:" << Time (m_timestamp)
      << " finalIp:" << Ipv4Address (m_finalIp)
      << " finalPort:" << (uint16_t) m_finalPort
+     << " traffId:" << (uint16_t) m_trafficId
      << " numOfVnfs:" << (uint16_t) m_nVnfs
      << " nextVnfIdx:" << (uint16_t) m_nextVnfIdx
      << " vnfList:";
@@ -108,9 +113,15 @@ SfcTag::Print (std::ostream &os) const
 }
 
 Time
-SfcTag::GetTimestamp () const
+SfcTag::GetTimestamp (void) const
 {
   return Time (m_timestamp);
+}
+
+uint16_t
+SfcTag::GetTrafficId (void) const
+{
+  return m_trafficId;
 }
 
 InetSocketAddress

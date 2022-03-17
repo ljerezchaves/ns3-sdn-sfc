@@ -23,15 +23,15 @@
 
 namespace ns3 {
 
+class SfcTag;
+
 /**
- * This application implements an intermediate VNF for packet processing. In
- * fact, this application does not with the packet except for resizing it based
- * on the ScalingFactor attribute. Each packet received by this
- * application must carry a SFC tag, from which we will get the next address in
- * the VNF chain to send the packet to. When the KeepAddress attribute is set to
- * true, this application doesn't change packet destination address. This is
- * usefull for implementing the first (fake) VNF application that we install in
- * the network switch.
+ * This application implements an intermediate VNF for packet processing. Each
+ * packet received by this application must carry a SFC tag, from which we will
+ * get the next address in the VNF chain to send the packet to. When the
+ * KeepAddress attribute is set to true, this application doesn't change packet
+ * destination address. This is usefull for implementing the first (fake) VNF
+ * application that we install in the network switch.
  */
 class VnfApp : public Application
 {
@@ -58,14 +58,24 @@ public:
    * implementing the OpenFlow logical port. It is called when the OpenFlow
    * switch sends a packet out over the logical port. The logical port callbacks
    * here, and we must process the packet to send it back to the switch.
-   * \param inPacket The packet received from the logical port.
+   * \param packet The packet received from the logical port.
    * \param srcMac Ethernet source address.
    * \param dstMac Ethernet destination address.
    * \param protocolNo The type of payload contained in this packet.
    * \return Whether the operation succeeded.
    */
-  bool ProcessPacket (Ptr<Packet> inPacket, const Address& source,
-                      const Address& dest, uint16_t protocolNo);
+  bool ReadPacket (Ptr<Packet> packet, const Address& srcMac,
+                   const Address& dstMac, uint16_t protocolNo);
+
+  /**
+   * Create and send a new packet.
+   * \param packetSize The packet size to create.
+   * \param packetTag The packet tag to attach to it.
+   * \param srcMac Ethernet source address.
+   * \param dstMac Ethernet destination address.
+   */
+  void SendPacket (uint32_t packetSize, SfcTag packetTag,
+                   const Address& srcMac, const Address& dstMac);
 
 protected:
   /** Destructor implementation */
@@ -100,6 +110,8 @@ private:
 
   double                m_scalingFactor;    //!< Packet size scaling factor.
   EventId               m_sendEvent;        //!< SendPacket event.
+
+  std::map<uint16_t, double> m_pktAdjust;   //!< Packet transmission adjustment.
 
   Ptr<VirtualNetDevice> m_logicalPort;      //!< OpenFlow logical port device.
 };

@@ -85,34 +85,55 @@ VnfApp::SetVirtualDevice (Ptr<VirtualNetDevice> device)
   NS_LOG_FUNCTION (this << device);
 
   m_logicalPort = device;
-  m_logicalPort->SetSendCallback (MakeCallback (&VnfApp::ProcessPacket, this));
+  m_logicalPort->SetSendCallback (MakeCallback (&VnfApp::ReadPacket, this));
 }
 
 bool
-VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
-                       const Address& dstMac, uint16_t protocolNo)
+VnfApp::ReadPacket (Ptr<Packet> packet, const Address& srcMac,
+                    const Address& dstMac, uint16_t protocolNo)
 {
-  NS_LOG_FUNCTION (this << inPacket << srcMac << dstMac << protocolNo);
+  NS_LOG_FUNCTION (this << packet << srcMac << dstMac << protocolNo);
 
   // This function is called every time the OpenFlow switch sends a packet to
   // the virtual port (which means the switch is trying to send the packet to
   // the application).
 
   // Each packet gets here with IP and UDP headers. Let's remove them first
-  InetSocketAddress fromAddr = RemoveHeaders (inPacket);
-  SfcTag sfcTag;
-  inPacket->PeekPacketTag (sfcTag);
+  InetSocketAddress fromAddr = RemoveHeaders (packet);
+  uint32_t pktSize = packet->GetSize ();
+
+  SfcTag pktTag;
+  packet->PeekPacketTag (pktTag);
+  uint16_t trafficId = pktTag.GetTrafficId ();
+
   NS_LOG_INFO ("VNF " << m_vnfId
                << " copy " << m_vnfCopy
-               << " received a packet of " << inPacket->GetSize ()
+               << " received a packet of " << pktSize
                << " bytes from IP " << fromAddr.GetIpv4 ()
                << " port " << fromAddr.GetPort ()
-               << " with traffic ID " << sfcTag.GetTrafficId ());
+               << " with traffic ID " << trafficId);
 
-  // Create a new output packet with adjusted size.
-  int newPacketSize = inPacket->GetSize () * m_scalingFactor;
-  Ptr<Packet> outPacket = Create<Packet> (newPacketSize);
-  // FIXME: Ethernet packet payload cannot exceed 1464 bytes: fragment it here.
+  // Send an output packet based on the scaling factor.
+  // For each incoming packet with an specific traffic IF, we add the scaling
+  // factor to the packet adjustment map. Every time the adjustment map is >= 1
+  // we send a new output packet and subtract 1 from the adjusment map.
+  m_pktAdjust[trafficId] += m_scalingFactor;
+  while (m_pktAdjust[trafficId] >= 1.0)
+    {
+      SendPacket (pktSize, pktTag, srcMac, dstMac);
+      m_pktAdjust[trafficId] -= 1.0;
+    }
+
+  return true;
+}
+
+void
+VnfApp::SendPacket (uint32_t packetSize, SfcTag packetTag,
+                    const Address& srcMac, const Address& dstMac)
+{
+  NS_LOG_FUNCTION (this << packetSize << srcMac << dstMac);
+
+  Ptr<Packet> outPacket = Create<Packet> (packetSize);
 
   // Copy the SFC tag from the incoming to the outcoming packet
   InetSocketAddress nextAddress (Ipv4Address::GetAny ());
@@ -126,16 +147,16 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
     {
       // When KeepAddress attribute is set to false, we will get the next
       // address from the SFC tag.
-      nextAddress = InetSocketAddress (sfcTag.GetNextAddress ());
+      nextAddress = InetSocketAddress (packetTag.GetNextAddress ());
     }
-  outPacket->AddPacketTag (sfcTag);
+  outPacket->AddPacketTag (packetTag);
 
   NS_LOG_INFO ("VNF " << m_vnfId
                << " copy " << m_vnfCopy
-               << " will send a packet of " << inPacket->GetSize ()
+               << " will send a packet of " << packetSize
                << " bytes to IP " << nextAddress.GetIpv4 ()
                << " port " << nextAddress.GetPort ()
-               << " with traffic ID " << sfcTag.GetTrafficId ());
+               << " with traffic ID " << packetTag.GetTrafficId ());
 
   // Insert UDP, IPv4 and Ethernet headers into the output packet.
   Mac48Address nextMacAddr = SdnController::GetArpEntry (nextAddress.GetIpv4 ());
@@ -145,8 +166,6 @@ VnfApp::ProcessPacket (Ptr<Packet> inPacket, const Address& srcMac,
   // Send the output packet to the OpenFlow switch over the logical port.
   m_logicalPort->Receive (outPacket, Ipv4L3Protocol::PROT_NUMBER,
                           dstMac, srcMac, NetDevice::PACKET_HOST);
-
-  return true;
 }
 
 void

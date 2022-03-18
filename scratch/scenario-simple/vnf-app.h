@@ -71,10 +71,13 @@ public:
    * Create and send a new packet.
    * \param packetSize The packet size to create.
    * \param packetTag The packet tag to attach to it.
+   * \param srcPort UDP source port number.
+   * \param srcIp IPv4 source address.
    * \param srcMac Ethernet source address.
    * \param dstMac Ethernet destination address.
    */
   void SendPacket (uint32_t packetSize, SfcTag packetTag,
+                   uint16_t srcPort, Ipv4Address srcIp,
                    const Address& srcMac, const Address& dstMac);
 
 protected:
@@ -98,10 +101,9 @@ protected:
    * \param srcMac The source MAC address.
    * \param dstMac The destination MAC address.
    */
-  void InsertHeaders (Ptr<Packet> packet,
-                      Ipv4Address srcIp, Ipv4Address dstIp,
-                      uint16_t srcPort, uint16_t dstPort,
-                      Mac48Address srcMac, Mac48Address dstMac);
+  void InsertHeaders (
+    Ptr<Packet> packet, Ipv4Address srcIp, Ipv4Address dstIp,
+    uint16_t srcPort, uint16_t dstPort, Mac48Address srcMac, Mac48Address dstMac);
 
 private:
   uint32_t              m_vnfId;            //!< VNF ID.

@@ -34,8 +34,8 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   NS_LOG_FUNCTION (this);
 
   // Allocate virtual IP and MAC addresses for this VNF
-  std::string vnfIpStr = "10.10.1." + std::to_string (vnfId);
-  m_vnfIpAddress = Ipv4Address (vnfIpStr.c_str ());
+  uint32_t baseAddr = Ipv4Address ("10.20.0.0").Get ();
+  m_vnfIpAddress = Ipv4Address (baseAddr + vnfId);
   m_vnfMacAddress = Mac48Address::Allocate ();
 
   // Configure the application factories.

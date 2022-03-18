@@ -87,37 +87,24 @@ private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.
   Ptr<OFSwitch13InternalHelper> m_switchHelper;     //!< Switch helper.
   NetDeviceContainer            m_portDevices;      //!< Switch port devices.
-  NetDeviceContainer            m_hostDevices;      //!< Host devices.
   uint16_t                      m_numVnfs;          //!< Number of VNFs.
+  uint16_t                      m_numNodes;         //!< Number of nodes.
 
 public:
-  Ptr<Node>                     m_core0SwitchNode;
-  Ptr<Node>                     m_edge1SwitchNode;
-  Ptr<Node>                     m_edge2SwitchNode;
-  Ptr<OFSwitch13Device>         m_core0SwitchDevice;
-  Ptr<OFSwitch13Device>         m_edge1SwitchDevice;
-  Ptr<OFSwitch13Device>         m_edge2SwitchDevice;
+  typedef std::vector<Ptr<OFSwitch13Port>> PortVector_t;
 
-  Ptr<Node>                     m_core0ServerNode;
-  Ptr<Node>                     m_edge1ServerNode;
-  Ptr<Node>                     m_edge2ServerNode;
-  Ptr<OFSwitch13Device>         m_core0ServerDevice;
-  Ptr<OFSwitch13Device>         m_edge1ServerDevice;
-  Ptr<OFSwitch13Device>         m_edge2ServerDevice;
+  NodeContainer                 m_networkNodes;
+  NodeContainer                 m_serverNodes;
+  NodeContainer                 m_hostNodes;
 
-  Ptr<Node>                     m_core0HostNode;
-  Ptr<Node>                     m_edge1HostNode;
-  Ptr<Node>                     m_edge2HostNode;
-  Ptr<NetDevice>                m_core0HostDevice;
-  Ptr<NetDevice>                m_edge1HostDevice;
-  Ptr<NetDevice>                m_edge2HostDevice;
-  Ipv4Address                   m_core0HostAddress;
-  Ipv4Address                   m_edge1HostAddress;
-  Ipv4Address                   m_edge2HostAddress;
+  OFSwitch13DeviceContainer     m_networkDevices;
+  OFSwitch13DeviceContainer     m_serverDevices;
+  NetDeviceContainer            m_hostDevices;
+  Ipv4InterfaceContainer        m_hostIfaces;
 
-  Ptr<OFSwitch13Port>           m_core0ToHostPort;
-  Ptr<OFSwitch13Port>           m_edge1ToHostPort;
-  Ptr<OFSwitch13Port>           m_edge2ToHostPort;
+  PortVector_t                  m_networkToServerDlPorts;
+  PortVector_t                  m_serverToNetworkDlPorts;
+  PortVector_t                  m_networkToHostPorts;
 
   Ptr<OFSwitch13Port>           m_core0ToEdge1Port;
   Ptr<OFSwitch13Port>           m_edge1Tocore0Port;
@@ -125,24 +112,6 @@ public:
   Ptr<OFSwitch13Port>           m_edge2Tocore0Port;
   Ptr<OFSwitch13Port>           m_edge1ToEdge2Port;
   Ptr<OFSwitch13Port>           m_edge2ToEdge1Port;
-
-  Ptr<OFSwitch13Port>           m_core0ToServerDlinkPort;
-  Ptr<OFSwitch13Port>           m_serverTocore0DlinkPort;
-  Ptr<OFSwitch13Port>           m_edge1ToServerDlinkPort;
-  Ptr<OFSwitch13Port>           m_serverToEdge1DlinkPort;
-  Ptr<OFSwitch13Port>           m_edge2ToServerDlinkPort;
-  Ptr<OFSwitch13Port>           m_serverToEdge2DlinkPort;
-
-  std::vector<Ptr<CsmaChannel>> m_core0ServerVnfLinks;
-  std::vector<Ptr<CsmaChannel>> m_edge1ServerVnfLinks;
-  std::vector<Ptr<CsmaChannel>> m_edge2ServerVnfLinks;
-
-  std::vector<Ptr<OFSwitch13Port>>  m_core0ToServerVnfPorts;
-  std::vector<Ptr<OFSwitch13Port>>  m_serverTocore0VnfPorts;
-  std::vector<Ptr<OFSwitch13Port>>  m_edge1ToServerVnfPorts;
-  std::vector<Ptr<OFSwitch13Port>>  m_serverToEdge1VnfPorts;
-  std::vector<Ptr<OFSwitch13Port>>  m_edge2ToServerVnfPorts;
-  std::vector<Ptr<OFSwitch13Port>>  m_serverToEdge2VnfPorts;
 };
 } // namespace ns3
 #endif /* SDN_NETWORK_H */

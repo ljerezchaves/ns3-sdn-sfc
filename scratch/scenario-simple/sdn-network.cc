@@ -48,7 +48,12 @@ SdnNetwork::GetTypeId (void)
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (3),
                    MakeUintegerAccessor (&SdnNetwork::m_numVnfs),
-                   MakeUintegerChecker<uint16_t> ());
+                   MakeUintegerChecker<uint16_t> ())
+    .AddAttribute ("NumberNodes", "Total number of network nodes in this scenario.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
+                   UintegerValue (3),
+                   MakeUintegerAccessor (&SdnNetwork::m_numNodes),
+                   MakeUintegerChecker<uint16_t> (1));
   return tid;
 }
 
@@ -110,45 +115,89 @@ SdnNetwork::ConfigureTopology (void)
   m_switchHelper->InstallController (controllerNode, m_controllerApp);
 
   // ---------------------------------------------------------------------------
-  // Create the edge and core switches.
-  m_core0SwitchNode = CreateObject<Node> ();
-  m_edge1SwitchNode = CreateObject<Node> ();
-  m_edge2SwitchNode = CreateObject<Node> ();
-  Names::Add ("core0", m_core0SwitchNode);
-  Names::Add ("edge1", m_edge1SwitchNode);
-  Names::Add ("edge2", m_edge2SwitchNode);
+  // Create the network (core and edge) switch nodes.
+  m_networkNodes.Create (m_numNodes);
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      std::ostringstream name;
+      name << "node" << i;
+      Names::Add (name.str (), m_networkNodes.Get (i));
+    }
   m_switchHelper->SetDeviceAttribute ("TcamDelay", TimeValue (MicroSeconds (20)));
-  m_core0SwitchDevice = m_switchHelper->InstallSwitch (m_core0SwitchNode);
-  m_edge1SwitchDevice = m_switchHelper->InstallSwitch (m_edge1SwitchNode);
-  m_edge2SwitchDevice = m_switchHelper->InstallSwitch (m_edge2SwitchNode);
+  m_networkDevices = m_switchHelper->InstallSwitch (m_networkNodes);
 
   // ---------------------------------------------------------------------------
-  // Create the server switches
-  m_core0ServerNode = CreateObject<Node> ();
-  m_edge1ServerNode = CreateObject<Node> ();
-  m_edge2ServerNode = CreateObject<Node> ();
-  Names::Add ("server@core0", m_core0ServerNode);
-  Names::Add ("server@edge1", m_edge1ServerNode);
-  Names::Add ("server@edge2", m_edge2ServerNode);
+  // Create the server switch nodes
+  m_serverNodes.Create (m_numNodes);
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      std::ostringstream name;
+      name << "server" << i;
+      Names::Add (name.str (), m_serverNodes.Get (i));
+    }
+
   m_switchHelper->SetDeviceAttribute ("TcamDelay", TimeValue (MicroSeconds (0)));
-  m_core0ServerDevice = m_switchHelper->InstallSwitch (m_core0ServerNode);
-  m_edge1ServerDevice = m_switchHelper->InstallSwitch (m_edge1ServerNode);
-  m_edge2ServerDevice = m_switchHelper->InstallSwitch (m_edge2ServerNode);
+  m_serverDevices = m_switchHelper->InstallSwitch (m_serverNodes);
 
   // ---------------------------------------------------------------------------
   // Create the host nodes.
-  m_core0HostNode = CreateObject<Node> ();
-  m_edge1HostNode = CreateObject<Node> ();
-  m_edge2HostNode = CreateObject<Node> ();
-  Names::Add ("host@core0", m_core0HostNode);
-  Names::Add ("host@edge1", m_edge1HostNode);
-  Names::Add ("host@edge2", m_edge2HostNode);
+  m_hostNodes.Create (m_numNodes);
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      std::ostringstream name;
+      name << "host" << i;
+      Names::Add (name.str (), m_hostNodes.Get (i));
+    }
 
   // ---------------------------------------------------------------------------
-  // Configure helper for CSMA connections;
+  // Configure helper for CSMA connections.
   CsmaHelper csmaHelper;
   csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492)); // Ethernet II - PPoE
   NetDeviceContainer csmaDevices;
+
+  // ---------------------------------------------------------------------------
+  // Connect each server to its network switch (only downlink here).
+  // Maximum datarate and zero delay for these links.
+  csmaHelper.SetChannelAttribute ("DataRate", DataRateValue (DataRate (std::numeric_limits<uint64_t>::max ())));
+  csmaHelper.SetChannelAttribute ("Delay", TimeValue (Time (0)));
+
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      csmaDevices = csmaHelper.Install (m_networkNodes.Get (i), m_serverNodes.Get (i));
+      m_networkToServerDlPorts.push_back (m_networkDevices.Get (i)->AddSwitchPort (csmaDevices.Get (0)));
+      m_serverToNetworkDlPorts.push_back (m_serverDevices.Get (i)->AddSwitchPort (csmaDevices.Get (1)));
+      m_portDevices.Add (csmaDevices);
+    }
+
+  // ---------------------------------------------------------------------------
+  // Connect each host to its network switch.
+  // Maximum datarate and zero delay for these links.
+  csmaHelper.SetChannelAttribute ("DataRate", DataRateValue (DataRate (std::numeric_limits<uint64_t>::max ())));
+  csmaHelper.SetChannelAttribute ("Delay", TimeValue (Time (0)));
+
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      csmaDevices = csmaHelper.Install (m_networkNodes.Get (i), m_hostNodes.Get (i));
+      m_networkToHostPorts.push_back (m_networkDevices.Get (i)->AddSwitchPort (csmaDevices.Get (0)));
+      m_portDevices.Add (csmaDevices.Get (0));
+      m_hostDevices.Add (csmaDevices.Get (1));
+    }
+
+  // ---------------------------------------------------------------------------
+  // Configure IP address in hosts.
+  InternetStackHelper internetStackHelper;
+  Ipv4AddressHelper hostAddressHelper;
+  internetStackHelper.Install (m_hostNodes);
+  hostAddressHelper.SetBase ("10.0.0.0", "255.0.0.0");
+  m_hostIfaces = hostAddressHelper.Assign (m_hostDevices);
+
+  // ---------------------------------------------------------------------------
+  // Notify the controller about the host nodes.
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      m_controllerApp->NotifyHostAttach (m_networkDevices.Get (i),
+          m_networkToHostPorts.at (i)->GetPortNo (), m_hostDevices.Get (i));
+    }
 
   // ---------------------------------------------------------------------------
   // Connect edge and core switches.
@@ -157,93 +206,22 @@ SdnNetwork::ConfigureTopology (void)
   csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (1)));
 
   // Core to edge 1
-  csmaDevices = csmaHelper.Install (m_core0SwitchNode, m_edge1SwitchNode);
-  m_core0ToEdge1Port = m_core0SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_edge1Tocore0Port = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = csmaHelper.Install (m_networkNodes.Get (0), m_networkNodes.Get (1));
+  m_core0ToEdge1Port = m_networkDevices.Get (0)->AddSwitchPort (csmaDevices.Get (0));
+  m_edge1Tocore0Port = m_networkDevices.Get (1)->AddSwitchPort (csmaDevices.Get (1));
   m_portDevices.Add (csmaDevices);
 
   // Core to edge 2
-  csmaDevices = csmaHelper.Install (m_core0SwitchNode, m_edge2SwitchNode);
-  m_core0ToEdge2Port = m_core0SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_edge2Tocore0Port = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = csmaHelper.Install (m_networkNodes.Get (0), m_networkNodes.Get (2));
+  m_core0ToEdge2Port = m_networkDevices.Get (0)->AddSwitchPort (csmaDevices.Get (0));
+  m_edge2Tocore0Port = m_networkDevices.Get (2)->AddSwitchPort (csmaDevices.Get (1));
   m_portDevices.Add (csmaDevices);
 
   // Edge 1 to edge 2
-  csmaDevices = csmaHelper.Install (m_edge1SwitchNode, m_edge2SwitchNode);
-  m_edge1ToEdge2Port = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_edge2ToEdge1Port = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (1));
+  csmaDevices = csmaHelper.Install (m_networkNodes.Get (1), m_networkNodes.Get (2));
+  m_edge1ToEdge2Port = m_networkDevices.Get (1)->AddSwitchPort (csmaDevices.Get (0));
+  m_edge2ToEdge1Port = m_networkDevices.Get (2)->AddSwitchPort (csmaDevices.Get (1));
   m_portDevices.Add (csmaDevices);
-
-  // ---------------------------------------------------------------------------
-  // Connect each server to the proper network switch (only downlink here)
-  // Maximum datarate and zero delay for these links.
-  csmaHelper.SetChannelAttribute ("DataRate", DataRateValue (DataRate (std::numeric_limits<uint64_t>::max ())));
-  csmaHelper.SetChannelAttribute ("Delay", TimeValue (Time (0)));
-
-  // Core to server
-  csmaDevices = csmaHelper.Install (m_core0SwitchNode, m_core0ServerNode);
-  m_core0ToServerDlinkPort = m_core0SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_serverTocore0DlinkPort = m_core0ServerDevice->AddSwitchPort (csmaDevices.Get (1));
-  m_portDevices.Add (csmaDevices);
-
-  // Edge 1 to server
-  csmaDevices = csmaHelper.Install (m_edge1SwitchNode, m_edge1ServerNode);
-  m_edge1ToServerDlinkPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_serverToEdge1DlinkPort = m_edge1ServerDevice->AddSwitchPort (csmaDevices.Get (1));
-  m_portDevices.Add (csmaDevices);
-
-  // Edge 2 to server
-  csmaDevices = csmaHelper.Install (m_edge2SwitchNode, m_edge2ServerNode);
-  m_edge2ToServerDlinkPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_serverToEdge2DlinkPort = m_edge2ServerDevice->AddSwitchPort (csmaDevices.Get (1));
-  m_portDevices.Add (csmaDevices);
-
-  // ---------------------------------------------------------------------------
-  // Connect each host to the proper network switch
-  // Maximum datarate and zero delay for these links.
-  csmaHelper.SetChannelAttribute ("DataRate", DataRateValue (DataRate (std::numeric_limits<uint64_t>::max ())));
-  csmaHelper.SetChannelAttribute ("Delay", TimeValue (Time (0)));
-
-  // Core to host
-  csmaDevices = csmaHelper.Install (m_core0SwitchNode, m_core0HostNode);
-  m_core0ToHostPort = m_core0SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_portDevices.Add (csmaDevices.Get (0));
-  m_core0HostDevice = csmaDevices.Get (1);
-  m_hostDevices.Add (m_core0HostDevice);
-
-  // Edge 1 to host
-  csmaDevices = csmaHelper.Install (m_edge1SwitchNode, m_edge1HostNode);
-  m_edge1ToHostPort = m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_portDevices.Add (csmaDevices.Get (0));
-  m_edge1HostDevice = csmaDevices.Get (1);
-  m_hostDevices.Add (m_edge1HostDevice);
-
-  // Edge 2 to host
-  csmaDevices = csmaHelper.Install (m_edge2SwitchNode, m_edge2HostNode);
-  m_edge2ToHostPort = m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0));
-  m_portDevices.Add (csmaDevices.Get (0));
-  m_edge2HostDevice = csmaDevices.Get (1);
-  m_hostDevices.Add (m_edge2HostDevice);
-
-  // ---------------------------------------------------------------------------
-  // Configure IP address in hosts.
-  InternetStackHelper internetStackHelper;
-  Ipv4InterfaceContainer hostIfaces;
-  Ipv4AddressHelper hostAddressHelper;
-  internetStackHelper.Install (m_core0HostNode);
-  internetStackHelper.Install (m_edge1HostNode);
-  internetStackHelper.Install (m_edge2HostNode);
-  hostAddressHelper.SetBase ("10.0.0.0", "255.0.0.0");
-  hostIfaces = hostAddressHelper.Assign (m_hostDevices);
-  m_core0HostAddress = hostIfaces.GetAddress (0);
-  m_edge1HostAddress = hostIfaces.GetAddress (1);
-  m_edge2HostAddress = hostIfaces.GetAddress (2);
-
-  // ---------------------------------------------------------------------------
-  // Notify the controller about the host nodes.
-  m_controllerApp->NotifyHostAttach (m_core0SwitchDevice, m_core0ToHostPort->GetPortNo (), m_core0HostDevice);
-  m_controllerApp->NotifyHostAttach (m_edge1SwitchDevice, m_edge1ToHostPort->GetPortNo (), m_edge1HostDevice);
-  m_controllerApp->NotifyHostAttach (m_edge2SwitchDevice, m_edge2ToHostPort->GetPortNo (), m_edge2HostDevice);
 }
 
 void
@@ -266,32 +244,16 @@ SdnNetwork::ConfigureFunctions (void)
       Ptr<VnfInfo> vnfInfo = CreateObject<VnfInfo> (i);
       SdnController::SaveArpEntry (vnfInfo->GetIpAddr (), vnfInfo->GetMacAddr ());
 
-      // Server 1 at core 1.
-      csmaDevices = csmaHelper.Install (m_core0SwitchNode, m_core0ServerNode);
-      m_core0ToServerVnfPorts.push_back (m_core0SwitchDevice->AddSwitchPort (csmaDevices.Get (0)));
-      m_serverTocore0VnfPorts.push_back (m_core0ServerDevice->AddSwitchPort (csmaDevices.Get (1)));
-      m_portDevices.Add (csmaDevices);
-      m_core0ServerVnfLinks.push_back (DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ()));
-      InstallVnfCopy (m_core0SwitchNode, m_core0SwitchDevice, m_core0ServerNode, m_core0ServerDevice,
-                      m_core0ToServerVnfPorts.back ()->GetPortNo (), m_serverTocore0DlinkPort->GetPortNo (), vnfInfo);
-
-      // Server 1 at edge 1.
-      csmaDevices = csmaHelper.Install (m_edge1SwitchNode, m_edge1ServerNode);
-      m_edge1ToServerVnfPorts.push_back (m_edge1SwitchDevice->AddSwitchPort (csmaDevices.Get (0)));
-      m_serverToEdge1VnfPorts.push_back (m_edge1ServerDevice->AddSwitchPort (csmaDevices.Get (1)));
-      m_portDevices.Add (csmaDevices);
-      m_edge1ServerVnfLinks.push_back (DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ()));
-      InstallVnfCopy (m_edge1SwitchNode, m_edge1SwitchDevice, m_edge1ServerNode, m_edge1ServerDevice,
-                      m_edge1ToServerVnfPorts.back ()->GetPortNo (), m_serverToEdge1DlinkPort->GetPortNo (), vnfInfo);
-
-      // Server 1 at edge 2.
-      csmaDevices = csmaHelper.Install (m_edge2SwitchNode, m_edge2ServerNode);
-      m_edge2ToServerVnfPorts.push_back (m_edge2SwitchDevice->AddSwitchPort (csmaDevices.Get (0)));
-      m_serverToEdge2VnfPorts.push_back (m_edge2ServerDevice->AddSwitchPort (csmaDevices.Get (1)));
-      m_portDevices.Add (csmaDevices);
-      m_edge2ServerVnfLinks.push_back (DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ()));
-      InstallVnfCopy (m_edge2SwitchNode, m_edge2SwitchDevice, m_edge2ServerNode, m_edge2ServerDevice,
-                      m_edge2ToServerVnfPorts.back ()->GetPortNo (), m_serverToEdge2DlinkPort->GetPortNo (), vnfInfo);
+      for (uint32_t j = 0; j < m_numNodes; j++)
+        {
+          csmaDevices = csmaHelper.Install (m_networkNodes.Get (j), m_serverNodes.Get (j));
+          uint32_t toServerPort = m_networkDevices.Get (j)->AddSwitchPort (csmaDevices.Get (0))->GetPortNo ();
+          uint32_t toNetworkPort = m_serverDevices.Get (j)->AddSwitchPort (csmaDevices.Get (1))->GetPortNo ();
+          m_portDevices.Add (csmaDevices);
+          // DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
+          InstallVnfCopy (m_networkNodes.Get (j), m_networkDevices.Get (j), m_serverNodes.Get (j), m_serverDevices.Get (j),
+                          toServerPort, toNetworkPort, vnfInfo);
+        }
     }
 
   // Configure the scaling factors for the VNFs.
@@ -308,9 +270,9 @@ SdnNetwork::ConfigureFunctions (void)
   vnfInfo3->SetScalingFactors (1.4, 1.8);
 
   // Initial activations of VNFs.
-  m_controllerApp->ActivateVnf (m_core0SwitchDevice, vnfInfo1);
-  m_controllerApp->ActivateVnf (m_core0SwitchDevice, vnfInfo2);
-  m_controllerApp->ActivateVnf (m_core0SwitchDevice, vnfInfo3);
+  m_controllerApp->ActivateVnf (m_networkDevices.Get (0), vnfInfo1);
+  m_controllerApp->ActivateVnf (m_networkDevices.Get (0), vnfInfo2);
+  m_controllerApp->ActivateVnf (m_networkDevices.Get (0), vnfInfo3);
 
   // Move VNF 1 from server to server2 at time 5 seconds.
   // Simulator::Schedule (Seconds (5), &SdnController::DeactivateVnf, m_controllerApp, m_core0SwitchDevice, vnfInfo1, 1);
@@ -327,15 +289,15 @@ SdnNetwork::ConfigureApplications (void)
   Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
   sourceApp->SetStartTime (Seconds (1));
   sourceApp->SetLocalUdpPort (portNo);
-  sourceApp->SetFinalIpAddress (m_core0HostAddress);
+  sourceApp->SetFinalIpAddress (m_hostIfaces.GetAddress (0));
   sourceApp->SetFinalUdpPort (portNo + 1);
-  m_core0HostNode->AddApplication (sourceApp);
+  m_hostNodes.Get (0)->AddApplication (sourceApp);
 
   // Configure the sink application on host 2.
   Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
   sinkApp->SetLocalUdpPort (portNo + 1);
   sinkApp->SetStartTime (Seconds (0));
-  m_core0HostNode->AddApplication (sinkApp);
+  m_hostNodes.Get (0)->AddApplication (sinkApp);
 
   // SFC: host --> VNF 1 --> VNF 3 --> VNF 2 --> host.
   sourceApp->SetVnfList ({1, 3, 2});

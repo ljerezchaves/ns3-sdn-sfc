@@ -23,20 +23,20 @@ NS_OBJECT_ENSURE_REGISTERED (SfcTag);
 
 SfcTag::SfcTag ()
   : m_timestamp (Simulator::Now ().GetTimeStep ()),
-  m_finalIp (0),
-  m_finalPort (0),
-  m_trafficId (0),
-  m_nVnfs (0),
-  m_nextVnfIdx (0)
+    m_finalIp (0),
+    m_finalPort (0),
+    m_trafficId (0),
+    m_nVnfs (0),
+    m_nextVnfIdx (0)
 {
   memset (m_listVnfs, 0, 8);
 }
 
 SfcTag::SfcTag (uint16_t trafficId, std::vector<uint8_t> vnfList, InetSocketAddress finalAddr)
   : m_timestamp (Simulator::Now ().GetTimeStep ()),
-  m_trafficId (trafficId),
-  m_nVnfs (vnfList.size ()),
-  m_nextVnfIdx (0)
+    m_trafficId (trafficId),
+    m_nVnfs (vnfList.size ()),
+    m_nextVnfIdx (0)
 {
   NS_ASSERT_MSG (m_nVnfs <= 8, "Maximum of 8 VNFs allowed in SFC.");
 
@@ -129,12 +129,12 @@ SfcTag::GetNextAddress (bool advance)
 {
   if (m_nextVnfIdx < m_nVnfs)
     {
-        Ptr<VnfInfo> vnfInfo = VnfInfo::GetPointer (m_listVnfs[m_nextVnfIdx]);
-        if (advance)
-          {
-            m_nextVnfIdx++;
-          }
-        return InetSocketAddress (vnfInfo->GetIpAddr (), 11111);
+      Ptr<VnfInfo> vnfInfo = VnfInfo::GetPointer (m_listVnfs[m_nextVnfIdx]);
+      if (advance)
+        {
+          m_nextVnfIdx++;
+        }
+      return InetSocketAddress (vnfInfo->GetIpAddr (), 11111);
     }
   else
     {

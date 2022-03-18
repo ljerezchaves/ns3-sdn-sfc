@@ -303,19 +303,19 @@ SdnController::ExtractIpv4Address (uint32_t oxm_of, struct ofl_match* match)
 {
   switch (oxm_of)
     {
-    case OXM_OF_ARP_SPA:
-    case OXM_OF_ARP_TPA:
-    case OXM_OF_IPV4_DST:
-    case OXM_OF_IPV4_SRC:
-      {
-        uint32_t ip;
-        int size = OXM_LENGTH (oxm_of);
-        struct ofl_match_tlv *tlv = oxm_match_lookup (oxm_of, match);
-        memcpy (&ip, tlv->value, size);
-        return Ipv4Address (ntohl (ip));
-      }
-    default:
-      NS_ABORT_MSG ("Invalid IP field.");
+      case OXM_OF_ARP_SPA:
+      case OXM_OF_ARP_TPA:
+      case OXM_OF_IPV4_DST:
+      case OXM_OF_IPV4_SRC:
+        {
+          uint32_t ip;
+          int size = OXM_LENGTH (oxm_of);
+          struct ofl_match_tlv *tlv = oxm_match_lookup (oxm_of, match);
+          memcpy (&ip, tlv->value, size);
+          return Ipv4Address (ntohl (ip));
+        }
+      default:
+        NS_ABORT_MSG ("Invalid IP field.");
     }
 }
 

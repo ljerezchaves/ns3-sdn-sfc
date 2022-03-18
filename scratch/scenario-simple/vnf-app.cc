@@ -26,7 +26,7 @@ NS_OBJECT_ENSURE_REGISTERED (VnfApp);
 
 VnfApp::VnfApp ()
   : m_sendEvent (EventId ()),
-  m_logicalPort (0)
+    m_logicalPort (0)
 {
   NS_LOG_FUNCTION (this);
 }
@@ -106,12 +106,12 @@ VnfApp::ReadPacket (Ptr<Packet> packet, const Address& srcMac,
   packet->PeekPacketTag (pktTag);
   uint16_t trafficId = pktTag.GetTrafficId ();
 
-  NS_LOG_INFO ("VNF " << m_vnfId
-               << " copy " << m_vnfCopy
-               << " received a packet of " << pktSize
-               << " bytes from IP " << fromAddr.GetIpv4 ()
-               << " port " << fromAddr.GetPort ()
-               << " with traffic ID " << trafficId);
+  NS_LOG_INFO ("VNF " << m_vnfId <<
+               " copy " << m_vnfCopy <<
+               " received a packet of " << pktSize <<
+               " bytes from IP " << fromAddr.GetIpv4 () <<
+               " port " << fromAddr.GetPort () <<
+               " with traffic ID " << trafficId);
 
   // Send an output packet based on the scaling factor.
   // For each incoming packet with an specific traffic IF, we add the scaling
@@ -151,12 +151,12 @@ VnfApp::SendPacket (uint32_t packetSize, SfcTag packetTag,
     }
   outPacket->AddPacketTag (packetTag);
 
-  NS_LOG_INFO ("VNF " << m_vnfId
-               << " copy " << m_vnfCopy
-               << " will send a packet of " << packetSize
-               << " bytes to IP " << nextAddress.GetIpv4 ()
-               << " port " << nextAddress.GetPort ()
-               << " with traffic ID " << packetTag.GetTrafficId ());
+  NS_LOG_INFO ("VNF " << m_vnfId <<
+               " copy " << m_vnfCopy <<
+               " will send a packet of " << packetSize <<
+               " bytes to IP " << nextAddress.GetIpv4 () <<
+               " port " << nextAddress.GetPort () <<
+               " with traffic ID " << packetTag.GetTrafficId ());
 
   // Insert UDP, IPv4 and Ethernet headers into the output packet.
   Mac48Address nextMacAddr = SdnController::GetArpEntry (nextAddress.GetIpv4 ());

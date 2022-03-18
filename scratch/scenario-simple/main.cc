@@ -97,19 +97,19 @@ EnableVerbose (bool enable)
   if (enable)
     {
       LogLevel logLevelWarn = static_cast<ns3::LogLevel> (
-          LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_WARN);
+        LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_WARN);
       NS_UNUSED (logLevelWarn);
 
       LogLevel logLevelWarnInfo = static_cast<ns3::LogLevel> (
-          LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_WARN | LOG_INFO);
+        LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_WARN | LOG_INFO);
       NS_UNUSED (logLevelWarnInfo);
 
       LogLevel logLevelInfo = static_cast<ns3::LogLevel> (
-          LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_INFO);
+        LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_INFO);
       NS_UNUSED (logLevelInfo);
 
       LogLevel logLevelAll = static_cast<ns3::LogLevel> (
-          LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_ALL);
+        LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_ALL);
       NS_UNUSED (logLevelAll);
 
       LogComponentEnable ("SdnController",            logLevelWarnInfo);

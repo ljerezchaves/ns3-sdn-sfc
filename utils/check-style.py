@@ -95,6 +95,8 @@ sp_compare=Add
 sp_func_class_paren=Add
 sp_after_type=Add
 sp_type_func=Add
+sp_angle_shift=Remove
+sp_permit_cpp11_shift=True
 sp_angle_paren=Add
 """
     level0 = """

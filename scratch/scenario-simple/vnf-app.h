@@ -98,8 +98,10 @@ protected:
    * \param srcMac The source MAC address.
    * \param dstMac The destination MAC address.
    */
-  void InsertHeaders (Ptr<Packet> packet, Ipv4Address srcIp, Ipv4Address dstIp,
-  uint16_t srcPort, uint16_t dstPort, Mac48Address srcMac, Mac48Address dstMac);
+  void InsertHeaders (Ptr<Packet> packet,
+                      Ipv4Address srcIp, Ipv4Address dstIp,
+                      uint16_t srcPort, uint16_t dstPort,
+                      Mac48Address srcMac, Mac48Address dstMac);
 
 private:
   uint32_t              m_vnfId;            //!< VNF ID.

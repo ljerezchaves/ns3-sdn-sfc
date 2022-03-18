@@ -27,9 +27,9 @@ VnfInfo::VnfInfoMap_t VnfInfo::m_vnfInfoById;
 
 VnfInfo::VnfInfo (uint32_t vnfId)
   : m_vnfId (vnfId),
-  m_copyCounter (0),
-  m_csf (1),
-  m_nsf (1)
+    m_copyCounter (0),
+    m_csf (1),
+    m_nsf (1)
 {
   NS_LOG_FUNCTION (this);
 

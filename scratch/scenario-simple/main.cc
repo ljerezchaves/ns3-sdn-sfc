@@ -20,6 +20,7 @@
 #include <ns3/internet-module.h>
 #include <ns3/ofswitch13-module.h>
 #include "sdn-network.h"
+#include "vnf-info.h"
 
 using namespace ns3;
 
@@ -54,8 +55,19 @@ main (int argc, char *argv[])
   EnableVerbose (verbose);
 
   // Create the SDN network.
-  Ptr<SdnNetwork> sdnNetwork = CreateObject<SdnNetwork> ();
+  Ptr<SdnNetwork> sdnNetwork = CreateObjectWithAttributes<SdnNetwork> (
+    "NumberVnfs", UintegerValue (6), "NumberNodes", UintegerValue (3));
   sdnNetwork->EnablePcap (pcapLog);
+
+  // VNFs 0 and 1: network service
+  VnfInfo::GetPointer (0)->SetScalingFactors (0.3, 0.9);
+  VnfInfo::GetPointer (1)->SetScalingFactors (0.3, 0.9);
+  // VNFs 2 and 3: compression service
+  VnfInfo::GetPointer (2)->SetScalingFactors (2.2, 0.7);
+  VnfInfo::GetPointer (3)->SetScalingFactors (2.2, 0.7);
+  // VNFs 4 and 5: expansion service
+  VnfInfo::GetPointer (4)->SetScalingFactors (1.4, 1.8);
+  VnfInfo::GetPointer (5)->SetScalingFactors (1.4, 1.8);
 
   // Populate routing tables.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();

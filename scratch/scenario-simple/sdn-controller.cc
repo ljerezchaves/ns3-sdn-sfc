@@ -93,12 +93,11 @@ SdnController::NotifyVnfAttach (
                    switchPortNo << vnfInfo);
 
   // To deal with copies of the same VNF in all servers, our strategy is to
-  // install the fowarding rules in a different pipeline tables (table 1). Thus,
-  // to activate or deactivate the VNF in a server, it is enough to adjust a
-  // flow rule in table 0 at network switch to send the packets addressed to the
-  // VNF to the table 1.
+  // install the VNF fowarding rules in a different pipeline table (table 1).
+  // Thus, to de/activate the VNF in a server, it is enough to install a flow
+  // rule in table 0 sending the packet addressed to the VNF to the table 1.
 
-  // Packets addressed to the VNF entering the server table on network switch:
+  // Packets addressed to the VNF entering the table 1 on network switch:
   // -> send to the logical port connected to the 1st app
   {
     std::ostringstream cmd;

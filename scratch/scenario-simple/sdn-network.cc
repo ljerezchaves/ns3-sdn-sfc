@@ -28,7 +28,7 @@ NS_OBJECT_ENSURE_REGISTERED (SdnNetwork);
 
 SdnNetwork::SdnNetwork ()
   : m_controllerApp (0),
-  m_switchHelper (0)
+    m_switchHelper (0)
 {
   NS_LOG_FUNCTION (this);
 }
@@ -44,12 +44,12 @@ SdnNetwork::GetTypeId (void)
   static TypeId tid = TypeId ("ns3::SdnNetwork")
     .SetParent<Object> ()
     .AddConstructor<SdnNetwork> ()
-    .AddAttribute ("NumberVnfs", "Total number of VNFs in this scenario.",
+    .AddAttribute ("NumberVnfs", "Total number of VNFs.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
-                   UintegerValue (3),
+                   UintegerValue (5),
                    MakeUintegerAccessor (&SdnNetwork::m_numVnfs),
                    MakeUintegerChecker<uint16_t> ())
-    .AddAttribute ("NumberNodes", "Total number of network nodes in this scenario.",
+    .AddAttribute ("NumberNodes", "Total number of network nodes.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (3),
                    MakeUintegerAccessor (&SdnNetwork::m_numNodes),
@@ -62,8 +62,6 @@ SdnNetwork::DoDispose ()
 {
   NS_LOG_FUNCTION (this);
 
-  m_controllerApp = 0;
-  m_switchHelper = 0;
   Object::DoDispose ();
 }
 
@@ -74,10 +72,9 @@ SdnNetwork::EnablePcap (bool enable)
 
   if (enable)
     {
-      CsmaHelper csmaHelper;
-      csmaHelper.EnablePcap ("port", m_portDevices, true);
-      csmaHelper.EnablePcap ("host", m_hostDevices, true);
-      m_switchHelper->EnableOpenFlowPcap ("ofch", false);
+      m_csmaHelper.EnablePcap ("port", m_portDevices, true);
+      m_csmaHelper.EnablePcap ("host", m_hostDevices, true);
+      m_switchHelper->EnableOpenFlowPcap ("ofp", false);
     }
 }
 
@@ -85,6 +82,10 @@ void
 SdnNetwork::NotifyConstructionCompleted (void)
 {
   NS_LOG_FUNCTION (this);
+
+  // Create and configure the helpers.
+  m_switchHelper = CreateObject<OFSwitch13InternalHelper> ();
+  m_csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492));
 
   // Configure network topology, VNFs and applications (respect this order!).
   ConfigureTopology ();
@@ -103,9 +104,6 @@ SdnNetwork::ConfigureTopology (void)
 {
   NS_LOG_FUNCTION (this);
 
-  // Create the OFSwitch13 helper.
-  m_switchHelper = CreateObject<OFSwitch13InternalHelper> ();
-
   // ---------------------------------------------------------------------------
   // Create the SDN controller.
   Ptr<Node> controllerNode = CreateObject<Node> ();
@@ -115,7 +113,7 @@ SdnNetwork::ConfigureTopology (void)
   m_switchHelper->InstallController (controllerNode, m_controllerApp);
 
   // ---------------------------------------------------------------------------
-  // Create the network (core and edge) switch nodes.
+  // Create the network (core and edge switch) nodes.
   m_networkNodes.Create (m_numNodes);
   for (uint32_t i = 0; i < m_numNodes; i++)
     {
@@ -124,10 +122,48 @@ SdnNetwork::ConfigureTopology (void)
       Names::Add (name.str (), m_networkNodes.Get (i));
     }
   m_switchHelper->SetDeviceAttribute ("TcamDelay", TimeValue (MicroSeconds (20)));
-  m_networkDevices = m_switchHelper->InstallSwitch (m_networkNodes);
+  m_networkSwitchDevs = m_switchHelper->InstallSwitch (m_networkNodes);
 
   // ---------------------------------------------------------------------------
-  // Create the server switch nodes
+  // Connect network switches in full topology.
+  // FIXME: Initial DataRate and delay for network connections.
+  m_csmaHelper.SetChannelAttribute ("DataRate", StringValue ("10Mbps"));
+  m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (1)));
+
+  // Initialize the pointer matrix
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      m_networkToNetworkPorts.push_back (PortVector_t ());
+      m_networkToNetworkChannels.push_back (ChannelVector_t ());
+      for (uint32_t j = 0; j < m_numNodes; j++)
+        {
+          m_networkToNetworkPorts.at (i).push_back (0);
+          m_networkToNetworkChannels.at (i).push_back (0);
+        }
+    }
+
+  // Connect each pair of network switches
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      for (uint32_t j = 0; j < m_numNodes; j++)
+        {
+          if (i != j)
+            {
+              NetDeviceContainer csmaDevices = m_csmaHelper.Install (m_networkNodes.Get (i), m_networkNodes.Get (j));
+              m_networkToNetworkPorts[i][j] = m_networkSwitchDevs.Get (i)->AddSwitchPort (csmaDevices.Get (0));
+              m_networkToNetworkPorts[j][i] = m_networkSwitchDevs.Get (j)->AddSwitchPort (csmaDevices.Get (1));
+              m_portDevices.Add (csmaDevices);
+
+              Ptr<CsmaChannel> csmaChannel = DynamicCast<CsmaChannel> (
+                DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
+              m_networkToNetworkChannels[i][j] = csmaChannel;
+              m_networkToNetworkChannels[j][i] = csmaChannel;
+            }
+        }
+    }
+
+  // ---------------------------------------------------------------------------
+  // Create the server (switch) nodes
   m_serverNodes.Create (m_numNodes);
   for (uint32_t i = 0; i < m_numNodes; i++)
     {
@@ -135,9 +171,23 @@ SdnNetwork::ConfigureTopology (void)
       name << "server" << i;
       Names::Add (name.str (), m_serverNodes.Get (i));
     }
-
   m_switchHelper->SetDeviceAttribute ("TcamDelay", TimeValue (MicroSeconds (0)));
-  m_serverDevices = m_switchHelper->InstallSwitch (m_serverNodes);
+  m_serverSwitchDevs = m_switchHelper->InstallSwitch (m_serverNodes);
+
+  // ---------------------------------------------------------------------------
+  // Connect each server to its network switch (only downlink connection here).
+  // Maximum datarate and zero delay for these links.
+  DataRate maxDataRate (std::numeric_limits<uint64_t>::max ());
+  m_csmaHelper.SetChannelAttribute ("DataRate", DataRateValue (maxDataRate));
+  m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (Time (0)));
+
+  for (uint32_t i = 0; i < m_numNodes; i++)
+    {
+      NetDeviceContainer csmaDevices = m_csmaHelper.Install (m_networkNodes.Get (i), m_serverNodes.Get (i));
+      m_networkSwitchDevs.Get (i)->AddSwitchPort (csmaDevices.Get (0));
+      m_serverToNetworkDlinkPorts.push_back (m_serverSwitchDevs.Get (i)->AddSwitchPort (csmaDevices.Get (1)));
+      m_portDevices.Add (csmaDevices);
+    }
 
   // ---------------------------------------------------------------------------
   // Create the host nodes.
@@ -150,35 +200,15 @@ SdnNetwork::ConfigureTopology (void)
     }
 
   // ---------------------------------------------------------------------------
-  // Configure helper for CSMA connections.
-  CsmaHelper csmaHelper;
-  csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492)); // Ethernet II - PPoE
-  NetDeviceContainer csmaDevices;
-
-  // ---------------------------------------------------------------------------
-  // Connect each server to its network switch (only downlink here).
-  // Maximum datarate and zero delay for these links.
-  csmaHelper.SetChannelAttribute ("DataRate", DataRateValue (DataRate (std::numeric_limits<uint64_t>::max ())));
-  csmaHelper.SetChannelAttribute ("Delay", TimeValue (Time (0)));
-
-  for (uint32_t i = 0; i < m_numNodes; i++)
-    {
-      csmaDevices = csmaHelper.Install (m_networkNodes.Get (i), m_serverNodes.Get (i));
-      m_networkToServerDlPorts.push_back (m_networkDevices.Get (i)->AddSwitchPort (csmaDevices.Get (0)));
-      m_serverToNetworkDlPorts.push_back (m_serverDevices.Get (i)->AddSwitchPort (csmaDevices.Get (1)));
-      m_portDevices.Add (csmaDevices);
-    }
-
-  // ---------------------------------------------------------------------------
   // Connect each host to its network switch.
   // Maximum datarate and zero delay for these links.
-  csmaHelper.SetChannelAttribute ("DataRate", DataRateValue (DataRate (std::numeric_limits<uint64_t>::max ())));
-  csmaHelper.SetChannelAttribute ("Delay", TimeValue (Time (0)));
+  m_csmaHelper.SetChannelAttribute ("DataRate", DataRateValue (maxDataRate));
+  m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (Time (0)));
 
   for (uint32_t i = 0; i < m_numNodes; i++)
     {
-      csmaDevices = csmaHelper.Install (m_networkNodes.Get (i), m_hostNodes.Get (i));
-      m_networkToHostPorts.push_back (m_networkDevices.Get (i)->AddSwitchPort (csmaDevices.Get (0)));
+      NetDeviceContainer csmaDevices = m_csmaHelper.Install (m_networkNodes.Get (i), m_hostNodes.Get (i));
+      m_networkToHostPorts.push_back (m_networkSwitchDevs.Get (i)->AddSwitchPort (csmaDevices.Get (0)));
       m_portDevices.Add (csmaDevices.Get (0));
       m_hostDevices.Add (csmaDevices.Get (1));
     }
@@ -195,33 +225,9 @@ SdnNetwork::ConfigureTopology (void)
   // Notify the controller about the host nodes.
   for (uint32_t i = 0; i < m_numNodes; i++)
     {
-      m_controllerApp->NotifyHostAttach (m_networkDevices.Get (i),
-          m_networkToHostPorts.at (i)->GetPortNo (), m_hostDevices.Get (i));
+      m_controllerApp->NotifyHostAttach (
+        m_networkSwitchDevs.Get (i), m_networkToHostPorts.at (i)->GetPortNo (), m_hostDevices.Get (i));
     }
-
-  // ---------------------------------------------------------------------------
-  // Connect edge and core switches.
-  // TODO: Configure DataRate and delay for connections
-  csmaHelper.SetChannelAttribute ("DataRate", StringValue ("100Mbps"));
-  csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (1)));
-
-  // Core to edge 1
-  csmaDevices = csmaHelper.Install (m_networkNodes.Get (0), m_networkNodes.Get (1));
-  m_core0ToEdge1Port = m_networkDevices.Get (0)->AddSwitchPort (csmaDevices.Get (0));
-  m_edge1Tocore0Port = m_networkDevices.Get (1)->AddSwitchPort (csmaDevices.Get (1));
-  m_portDevices.Add (csmaDevices);
-
-  // Core to edge 2
-  csmaDevices = csmaHelper.Install (m_networkNodes.Get (0), m_networkNodes.Get (2));
-  m_core0ToEdge2Port = m_networkDevices.Get (0)->AddSwitchPort (csmaDevices.Get (0));
-  m_edge2Tocore0Port = m_networkDevices.Get (2)->AddSwitchPort (csmaDevices.Get (1));
-  m_portDevices.Add (csmaDevices);
-
-  // Edge 1 to edge 2
-  csmaDevices = csmaHelper.Install (m_networkNodes.Get (1), m_networkNodes.Get (2));
-  m_edge1ToEdge2Port = m_networkDevices.Get (1)->AddSwitchPort (csmaDevices.Get (0));
-  m_edge2ToEdge1Port = m_networkDevices.Get (2)->AddSwitchPort (csmaDevices.Get (1));
-  m_portDevices.Add (csmaDevices);
 }
 
 void
@@ -229,50 +235,56 @@ SdnNetwork::ConfigureFunctions (void)
 {
   NS_LOG_FUNCTION (this);
 
-  // Configure helper for CSMA connections;
-  CsmaHelper csmaHelper;
-  csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492)); // Ethernet II - PPoE
-  NetDeviceContainer csmaDevices;
-
-  // TODO: Configure initial DataRate and delay for VNF uplink connections.
-  csmaHelper.SetChannelAttribute ("DataRate", StringValue ("100Mbps"));
-  csmaHelper.SetChannelAttribute ("Delay", TimeValue (MilliSeconds (1)));
-
-  // Create and configure each VNF on each server.
-  for (uint16_t i = 1; i <= m_numVnfs; i++)
+  // Create the VNFs.
+  for (uint16_t i = 0; i < m_numVnfs; i++)
     {
       Ptr<VnfInfo> vnfInfo = CreateObject<VnfInfo> (i);
       SdnController::SaveArpEntry (vnfInfo->GetIpAddr (), vnfInfo->GetMacAddr ());
+    }
 
-      for (uint32_t j = 0; j < m_numNodes; j++)
+  // FIXME: Initial DataRate and delay for VNF uplink connections.
+  m_csmaHelper.SetChannelAttribute ("DataRate", StringValue ("100Mbps"));
+  m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MicroSeconds (250)));
+
+  // Initialize the pointer matrix
+  for (uint32_t n = 0; n < m_numNodes; n++)
+    {
+      m_networkToVnfUlinkPorts.push_back (PortVector_t ());
+      m_networkToVnfUlinkChannels.push_back (ChannelVector_t ());
+      for (uint16_t v = 0; v < m_numVnfs; v++)
         {
-          csmaDevices = csmaHelper.Install (m_networkNodes.Get (j), m_serverNodes.Get (j));
-          uint32_t toServerPort = m_networkDevices.Get (j)->AddSwitchPort (csmaDevices.Get (0))->GetPortNo ();
-          uint32_t toNetworkPort = m_serverDevices.Get (j)->AddSwitchPort (csmaDevices.Get (1))->GetPortNo ();
-          m_portDevices.Add (csmaDevices);
-          // DynamicCast<CsmaChannel> (DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
-          InstallVnfCopy (m_networkNodes.Get (j), m_networkDevices.Get (j), m_serverNodes.Get (j), m_serverDevices.Get (j),
-                          toServerPort, toNetworkPort, vnfInfo);
+          m_networkToVnfUlinkPorts.at (n).push_back (0);
+          m_networkToVnfUlinkChannels.at (n).push_back (0);
         }
     }
 
-  // Configure the scaling factors for the VNFs.
-  // VNF 1: network service
-  Ptr<VnfInfo> vnfInfo1 = VnfInfo::GetPointer (1);
-  vnfInfo1->SetScalingFactors (0.3, 0.9);
+  // Install a copy of each VNF on each server.
+  for (uint32_t n = 0; n < m_numNodes; n++)
+    {
+      for (uint16_t v = 0; v < m_numVnfs; v++)
+        {
+          Ptr<VnfInfo> vnfInfo = VnfInfo::GetPointer (v);
 
-  // VNF 2 : compression service
-  Ptr<VnfInfo> vnfInfo2 = VnfInfo::GetPointer (2);
-  vnfInfo2->SetScalingFactors (2.2, 0.7);
+          // Create the individual connection from network to server for each VNF
+          NetDeviceContainer csmaDevices = m_csmaHelper.Install (m_networkNodes.Get (n), m_serverNodes.Get (n));
+          m_networkToVnfUlinkPorts[n][v] = (m_networkSwitchDevs.Get (n)->AddSwitchPort (csmaDevices.Get (0)));
+          m_serverSwitchDevs.Get (n)->AddSwitchPort (csmaDevices.Get (1))->GetPortNo ();
 
-  // VNF 2 : expansion service
-  Ptr<VnfInfo> vnfInfo3 = VnfInfo::GetPointer (3);
-  vnfInfo3->SetScalingFactors (1.4, 1.8);
+          m_portDevices.Add (csmaDevices);
+          m_networkToVnfUlinkChannels[n][v] = DynamicCast<CsmaChannel> (
+            DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
+
+          uint32_t vnfUplinkPortNo = m_networkToVnfUlinkPorts[n][v]->GetPortNo ();
+          uint32_t downlinkPortNo = m_serverToNetworkDlinkPorts[n]->GetPortNo ();
+          InstallVnfCopy (m_networkNodes.Get (n), m_networkSwitchDevs.Get (n), m_serverNodes.Get (n),
+                          m_serverSwitchDevs.Get (n), vnfUplinkPortNo, downlinkPortNo, vnfInfo);
+        }
+    }
 
   // Initial activations of VNFs.
-  m_controllerApp->ActivateVnf (m_networkDevices.Get (0), vnfInfo1);
-  m_controllerApp->ActivateVnf (m_networkDevices.Get (0), vnfInfo2);
-  m_controllerApp->ActivateVnf (m_networkDevices.Get (0), vnfInfo3);
+  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (0), VnfInfo::GetPointer (0));
+  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (0), VnfInfo::GetPointer (1));
+  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (0), VnfInfo::GetPointer (2));
 
   // Move VNF 1 from server to server2 at time 5 seconds.
   // Simulator::Schedule (Seconds (5), &SdnController::DeactivateVnf, m_controllerApp, m_core0SwitchDevice, vnfInfo1, 1);
@@ -300,7 +312,7 @@ SdnNetwork::ConfigureApplications (void)
   m_hostNodes.Get (0)->AddApplication (sinkApp);
 
   // SFC: host --> VNF 1 --> VNF 3 --> VNF 2 --> host.
-  sourceApp->SetVnfList ({1, 3, 2});
+  sourceApp->SetVnfList ({1, 0, 2});
 }
 
 void

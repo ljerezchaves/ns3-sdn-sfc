@@ -86,32 +86,35 @@ protected:
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app.
   Ptr<OFSwitch13InternalHelper> m_switchHelper;     //!< Switch helper.
+  CsmaHelper                    m_csmaHelper;       //!< Connection helper.
   NetDeviceContainer            m_portDevices;      //!< Switch port devices.
   uint16_t                      m_numVnfs;          //!< Number of VNFs.
   uint16_t                      m_numNodes;         //!< Number of nodes.
 
 public:
-  typedef std::vector<Ptr<OFSwitch13Port>> PortVector_t;
+  typedef std::vector<Ptr<OFSwitch13Port>> PortVector_t;  // vector of ports
+  typedef std::vector<Ptr<CsmaChannel>> ChannelVector_t;  // vector of channels
+  typedef std::vector<std::vector<Ptr<OFSwitch13Port>>> PortVectorVector_t; // matrix of ports
+  typedef std::vector<std::vector<Ptr<CsmaChannel>>> ChannelVectorVector_t; // matrix of channels
 
   NodeContainer                 m_networkNodes;
   NodeContainer                 m_serverNodes;
   NodeContainer                 m_hostNodes;
 
-  OFSwitch13DeviceContainer     m_networkDevices;
-  OFSwitch13DeviceContainer     m_serverDevices;
+  OFSwitch13DeviceContainer     m_networkSwitchDevs;
+  OFSwitch13DeviceContainer     m_serverSwitchDevs;
+
   NetDeviceContainer            m_hostDevices;
   Ipv4InterfaceContainer        m_hostIfaces;
 
-  PortVector_t                  m_networkToServerDlPorts;
-  PortVector_t                  m_serverToNetworkDlPorts;
-  PortVector_t                  m_networkToHostPorts;
+  PortVector_t                  m_networkToHostPorts;         // vector [node]
+  PortVector_t                  m_serverToNetworkDlinkPorts;  // vector [node]
 
-  Ptr<OFSwitch13Port>           m_core0ToEdge1Port;
-  Ptr<OFSwitch13Port>           m_edge1Tocore0Port;
-  Ptr<OFSwitch13Port>           m_core0ToEdge2Port;
-  Ptr<OFSwitch13Port>           m_edge2Tocore0Port;
-  Ptr<OFSwitch13Port>           m_edge1ToEdge2Port;
-  Ptr<OFSwitch13Port>           m_edge2ToEdge1Port;
+  PortVectorVector_t            m_networkToVnfUlinkPorts;     // matrix [node][vnf]
+  ChannelVectorVector_t         m_networkToVnfUlinkChannels;  // matriz [node][vnf]
+
+  PortVectorVector_t            m_networkToNetworkPorts;      // matrix [src node][dst node]
+  ChannelVectorVector_t         m_networkToNetworkChannels;   // matrix [src node][dst node]
 };
 } // namespace ns3
 #endif /* SDN_NETWORK_H */

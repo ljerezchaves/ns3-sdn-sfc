@@ -32,7 +32,6 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   m_nsf (1)
 {
   NS_LOG_FUNCTION (this);
-  NS_ASSERT_MSG (m_vnfId > 0, "VNF ID 0 not allowed.");
 
   // Allocate virtual IP and MAC addresses for this VNF
   std::string vnfIpStr = "10.10.1." + std::to_string (vnfId);

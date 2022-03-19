@@ -86,7 +86,7 @@ private:
   uint32_t        m_copyCounter;      //!< VNF copy counter
   Ipv4Address     m_vnfIpAddress;     //!< VNF IPv4 address
   Mac48Address    m_vnfMacAddress;    //!< VNF MAC address
-  u_char          m_vnfUdpPort;       //!< VNF UDP port number
+  uint16_t        m_vnfUdpPort;       //!< VNF UDP port number
   double          m_csf;              //!< Computation scaling factor (switch)
   double          m_nsf;              //!< Network scaling factor (server)
 

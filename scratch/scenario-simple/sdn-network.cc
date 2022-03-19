@@ -90,7 +90,7 @@ SdnNetwork::NotifyConstructionCompleted (void)
   // Configure network topology, VNFs and applications (respect this order!).
   ConfigureTopology ();
   ConfigureFunctions ();
-  ConfigureApplications ();
+  ConfigureTraffic ();
 
   // Let's connect the OpenFlow switches to the controller. From this point
   // on it is not possible to change the OpenFlow network configuration.
@@ -246,7 +246,7 @@ SdnNetwork::ConfigureFunctions (void)
   m_csmaHelper.SetChannelAttribute ("DataRate", StringValue ("100Mbps"));
   m_csmaHelper.SetChannelAttribute ("Delay", TimeValue (MicroSeconds (250)));
 
-  // Initialize the pointer matrix
+  // Initialize the pointer matrix.
   for (uint32_t n = 0; n < m_numNodes; n++)
     {
       m_networkToVnfUlinkPorts.push_back (PortVector_t ());
@@ -261,91 +261,92 @@ SdnNetwork::ConfigureFunctions (void)
   // Install a copy of each VNF on each server.
   for (uint32_t n = 0; n < m_numNodes; n++)
     {
+      // Getting pointer to network and server nodes and devices.
+      Ptr<Node> networkNode = m_networkNodes.Get (n);
+      Ptr<Node> serverNode = m_serverNodes.Get (n);
+      Ptr<OFSwitch13Device> networkSwitchDevice = m_networkSwitchDevs.Get (n);
+      Ptr<OFSwitch13Device> serverSwitchDevice = m_serverSwitchDevs.Get (n);
+      uint32_t downlinkPortNo = m_serverToNetworkDlinkPorts.at (n)->GetPortNo ();
+
       for (uint16_t v = 0; v < m_numVnfs; v++)
         {
           Ptr<VnfInfo> vnfInfo = VnfInfo::GetPointer (v);
 
-          // Create the individual connection from network to server for each VNF
-          NetDeviceContainer csmaDevices = m_csmaHelper.Install (m_networkNodes.Get (n), m_serverNodes.Get (n));
-          m_networkToVnfUlinkPorts[n][v] = (m_networkSwitchDevs.Get (n)->AddSwitchPort (csmaDevices.Get (0)));
-          m_serverSwitchDevs.Get (n)->AddSwitchPort (csmaDevices.Get (1))->GetPortNo ();
-
+          // Create the individual connection from network to server for this VNF.
+          NetDeviceContainer csmaDevices = m_csmaHelper.Install (networkNode, serverNode);
+          m_networkToVnfUlinkPorts[n][v] = networkSwitchDevice->AddSwitchPort (csmaDevices.Get (0));
+          serverSwitchDevice->AddSwitchPort (csmaDevices.Get (1))->GetPortNo ();
           m_portDevices.Add (csmaDevices);
           m_networkToVnfUlinkChannels[n][v] = DynamicCast<CsmaChannel> (
             DynamicCast<CsmaNetDevice> (csmaDevices.Get (0))->GetChannel ());
 
-          uint32_t vnfUplinkPortNo = m_networkToVnfUlinkPorts[n][v]->GetPortNo ();
-          uint32_t downlinkPortNo = m_serverToNetworkDlinkPorts[n]->GetPortNo ();
-          InstallVnfCopy (m_networkNodes.Get (n), m_networkSwitchDevs.Get (n), m_serverNodes.Get (n),
-                          m_serverSwitchDevs.Get (n), vnfUplinkPortNo, downlinkPortNo, vnfInfo);
+          // Create the pair of applications for this VNF.
+          Ptr<VnfApp> vnfApp1, vnfApp2;
+          std::tie (vnfApp1, vnfApp2) = vnfInfo->CreateVnfApps ();
+
+          // Install the first application on the network node.
+          Ptr<VirtualNetDevice> virtualDevice1 = CreateObject<VirtualNetDevice> ();
+          virtualDevice1->SetAddress (vnfInfo->GetMacAddr ());
+          Ptr<OFSwitch13Port> logicalPort1 = networkSwitchDevice->AddSwitchPort (virtualDevice1);
+          vnfApp1->SetVirtualDevice (virtualDevice1);
+          networkNode->AddApplication (vnfApp1);
+
+          // Install the second application on the server node.
+          Ptr<VirtualNetDevice> virtualDevice2 = CreateObject<VirtualNetDevice> ();
+          virtualDevice2->SetAddress (vnfInfo->GetMacAddr ());
+          Ptr<OFSwitch13Port> logicalPort2 = serverSwitchDevice->AddSwitchPort (virtualDevice2);
+          vnfApp2->SetVirtualDevice (virtualDevice2);
+          serverNode->AddApplication (vnfApp2);
+
+          // Notify the controller about this VNF copy.
+          m_controllerApp->NotifyVnfAttach (
+            networkSwitchDevice, logicalPort1->GetPortNo (),
+            serverSwitchDevice, logicalPort2->GetPortNo (),
+            m_networkToVnfUlinkPorts[n][v]->GetPortNo (),
+            downlinkPortNo, vnfInfo);
         }
     }
+}
 
-  // Initial activations of VNFs.
-  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (0), VnfInfo::GetPointer (0));
-  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (0), VnfInfo::GetPointer (1));
-  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (0), VnfInfo::GetPointer (2));
+void
+SdnNetwork::ConfigureTraffic (void)
+{
+  NS_LOG_FUNCTION (this);
+
+// Initial activations of VNFs.
+  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (0));
+  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (1));
+  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (2));
 
   // Move VNF 1 from server to server2 at time 5 seconds.
   // Simulator::Schedule (Seconds (5), &SdnController::DeactivateVnf, m_controllerApp, m_core0SwitchDevice, vnfInfo1, 1);
   // Simulator::Schedule (Seconds (5), &SdnController::ActivateVnf, m_controllerApp, m_core0SwitchDevice, vnfInfo1, 2);
+
+  CreateTrafficFlow (2, 2, {1, 2});
 }
 
 void
-SdnNetwork::ConfigureApplications (void)
+SdnNetwork::CreateTrafficFlow (uint32_t srcNodeId, uint32_t dstNodeId,
+                               std::vector<uint8_t> vnfList, Time startTime)
 {
-  NS_LOG_FUNCTION (this);
+  NS_LOG_FUNCTION (this << srcNodeId << dstNodeId);
 
-  // Configure the source application on host 1.
-  uint16_t portNo = 40001;
+  uint16_t basePortNo = 10000;
+
+  // Create the source application
   Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
-  sourceApp->SetStartTime (Seconds (1));
-  sourceApp->SetLocalUdpPort (portNo);
-  sourceApp->SetFinalIpAddress (m_hostIfaces.GetAddress (0));
-  sourceApp->SetFinalUdpPort (portNo + 1);
-  m_hostNodes.Get (0)->AddApplication (sourceApp);
+  sourceApp->SetStartTime (startTime);
+  sourceApp->SetLocalUdpPort (basePortNo + sourceApp->GetTrafficId ());
+  sourceApp->SetFinalIpAddress (m_hostIfaces.GetAddress (dstNodeId));
+  sourceApp->SetFinalUdpPort (basePortNo + sourceApp->GetTrafficId ());
+  sourceApp->SetVnfList (vnfList);
+  m_hostNodes.Get (srcNodeId)->AddApplication (sourceApp);
 
-  // Configure the sink application on host 2.
+  // Create the sink application
   Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
-  sinkApp->SetLocalUdpPort (portNo + 1);
+  sinkApp->SetLocalUdpPort (basePortNo + sourceApp->GetTrafficId ());
   sinkApp->SetStartTime (Seconds (0));
-  m_hostNodes.Get (0)->AddApplication (sinkApp);
-
-  // SFC: host --> VNF 1 --> VNF 3 --> VNF 2 --> host.
-  sourceApp->SetVnfList ({1, 0, 2});
-}
-
-void
-SdnNetwork::InstallVnfCopy (Ptr<Node> switchNode, Ptr<OFSwitch13Device> switchDevice,
-                            Ptr<Node> serverNode, Ptr<OFSwitch13Device> serverDevice,
-                            uint32_t switchToServerPortNo, uint32_t serverToSwitchPortNo,
-                            Ptr<VnfInfo> vnfInfo)
-{
-  NS_LOG_FUNCTION (this << serverNode << serverDevice << switchNode << switchDevice << vnfInfo);
-
-  // Create the pair of applications for this VNF
-  Ptr<VnfApp> vnfApp1, vnfApp2;
-  std::tie (vnfApp1, vnfApp2) = vnfInfo->CreateVnfApps ();
-
-  // Install the first application on the network switch
-  Ptr<VirtualNetDevice> virtualDevice1 = CreateObject<VirtualNetDevice> ();
-  virtualDevice1->SetAddress (vnfInfo->GetMacAddr ());
-  Ptr<OFSwitch13Port> logicalPort1 = switchDevice->AddSwitchPort (virtualDevice1);
-  vnfApp1->SetVirtualDevice (virtualDevice1);
-  switchNode->AddApplication (vnfApp1);
-
-  // Install the second application on the server switch
-  Ptr<VirtualNetDevice> virtualDevice2 = CreateObject<VirtualNetDevice> ();
-  virtualDevice2->SetAddress (vnfInfo->GetMacAddr ());
-  Ptr<OFSwitch13Port> logicalPort2 = serverDevice->AddSwitchPort (virtualDevice2);
-  vnfApp2->SetVirtualDevice (virtualDevice2);
-  serverNode->AddApplication (vnfApp2);
-
-  // Notify the controller about this VNF copy
-  m_controllerApp->NotifyVnfAttach (
-    switchDevice, logicalPort1->GetPortNo (),
-    serverDevice, logicalPort2->GetPortNo (),
-    switchToServerPortNo, serverToSwitchPortNo, vnfInfo);
+  m_hostNodes.Get (dstNodeId)->AddApplication (sinkApp);
 }
 
 } // namespace ns3

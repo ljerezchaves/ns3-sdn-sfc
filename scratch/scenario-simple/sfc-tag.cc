@@ -134,7 +134,7 @@ SfcTag::GetNextAddress (bool advance)
         {
           m_nextVnfIdx++;
         }
-      return InetSocketAddress (vnfInfo->GetIpAddr (), 11111);
+      return InetSocketAddress (vnfInfo->GetIpAddr (), vnfInfo->GetUdpPort ());
     }
   else
     {

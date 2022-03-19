@@ -66,7 +66,7 @@ VnfApp::GetTypeId (void)
                    MakeIpv4AddressChecker ())
     .AddAttribute ("UdpPort", "Local UDP port.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
-                   UintegerValue (11111),
+                   UintegerValue (9999),
                    MakeUintegerAccessor (&VnfApp::m_udpPort),
                    MakeUintegerChecker<uint16_t> ())
 

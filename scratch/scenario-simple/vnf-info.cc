@@ -28,6 +28,7 @@ VnfInfo::VnfInfoMap_t VnfInfo::m_vnfInfoById;
 VnfInfo::VnfInfo (uint32_t vnfId)
   : m_vnfId (vnfId),
     m_copyCounter (0),
+    m_vnfUdpPort (9999),
     m_csf (1),
     m_nsf (1)
 {
@@ -45,6 +46,7 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   m_1stFactory.Set ("VnfId", UintegerValue (vnfId));
   m_1stFactory.Set ("KeepAddress", BooleanValue (true));
   m_1stFactory.Set ("Ipv4Address", Ipv4AddressValue (m_vnfIpAddress));
+  m_1stFactory.Set ("UdpPort", UintegerValue (m_vnfUdpPort));
 
   // The 2nd application is the one we install in the server switch. This
   // application will change the destination address of the packet based on the
@@ -53,6 +55,7 @@ VnfInfo::VnfInfo (uint32_t vnfId)
   m_2ndFactory.Set ("VnfId", UintegerValue (vnfId));
   m_2ndFactory.Set ("KeepAddress", BooleanValue (false));
   m_2ndFactory.Set ("Ipv4Address", Ipv4AddressValue (m_vnfIpAddress));
+  m_2ndFactory.Set ("UdpPort", UintegerValue (m_vnfUdpPort));
 
   RegisterVnfInfo (Ptr<VnfInfo> (this));
 }
@@ -93,6 +96,14 @@ VnfInfo::GetMacAddr (void) const
   NS_LOG_FUNCTION (this);
 
   return m_vnfMacAddress;
+}
+
+uint16_t
+VnfInfo::GetUdpPort (void) const
+{
+  NS_LOG_FUNCTION (this);
+
+  return m_vnfUdpPort;
 }
 
 double

@@ -313,40 +313,58 @@ SdnNetwork::ConfigureTraffic (void)
 {
   NS_LOG_FUNCTION (this);
 
-// Initial activations of VNFs.
-  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (0));
-  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (1));
-  m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (2));
+  // Initial activations of VNFs.
+  // FIXME: Remove this.
+  for (uint16_t v = 0; v < m_numVnfs; v++)
+    {
+      m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (v));
+    }
 
-  // Move VNF 1 from server to server2 at time 5 seconds.
-  // Simulator::Schedule (Seconds (5), &SdnController::DeactivateVnf, m_controllerApp, m_core0SwitchDevice, vnfInfo1, 1);
-  // Simulator::Schedule (Seconds (5), &SdnController::ActivateVnf, m_controllerApp, m_core0SwitchDevice, vnfInfo1, 2);
-
-  CreateTrafficFlow (2, 2, {1, 2});
+  NewTrafficFlow (2, 2, {5, 4}, Seconds (1), Seconds (3));
+  NewTrafficFlow (2, 2, {3, 2}, Seconds (5), Seconds (7),
+                  "ns3::ConstantRandomVariable[Constant=1250]",
+                  "ns3::ConstantRandomVariable[Constant=0.5]");
 }
 
-void
-SdnNetwork::CreateTrafficFlow (uint32_t srcNodeId, uint32_t dstNodeId,
-                               std::vector<uint8_t> vnfList, Time startTime)
+uint16_t
+SdnNetwork::NewTrafficFlow (
+  uint32_t srcHostId, uint32_t dstHostId, std::vector<uint8_t> vnfList,
+  Time startTime, Time stopTime, std::string pktSize, std::string pktInterval)
 {
-  NS_LOG_FUNCTION (this << srcNodeId << dstNodeId);
+  NS_LOG_FUNCTION (this << srcHostId << dstHostId);
 
-  uint16_t basePortNo = 10000;
+  uint16_t srcPortNo = 10000;
+  uint16_t dstPortNo = 30000;
 
   // Create the source application
   Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
   sourceApp->SetStartTime (startTime);
-  sourceApp->SetLocalUdpPort (basePortNo + sourceApp->GetTrafficId ());
-  sourceApp->SetFinalIpAddress (m_hostIfaces.GetAddress (dstNodeId));
-  sourceApp->SetFinalUdpPort (basePortNo + sourceApp->GetTrafficId ());
+  sourceApp->SetStopTime (stopTime);
+  sourceApp->SetLocalUdpPort (srcPortNo + sourceApp->GetTrafficId ());
+  sourceApp->SetFinalIpAddress (m_hostIfaces.GetAddress (dstHostId));
+  sourceApp->SetFinalUdpPort (dstPortNo + sourceApp->GetTrafficId ());
   sourceApp->SetVnfList (vnfList);
-  m_hostNodes.Get (srcNodeId)->AddApplication (sourceApp);
+  m_hostNodes.Get (srcHostId)->AddApplication (sourceApp);
+
+  if (!pktSize.empty ())
+    {
+      sourceApp->SetAttribute ("PktSize", StringValue (pktSize));
+    }
+  if (!pktInterval.empty ())
+    {
+      sourceApp->SetAttribute ("PktInterval", StringValue (pktInterval));
+    }
 
   // Create the sink application
   Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
-  sinkApp->SetLocalUdpPort (basePortNo + sourceApp->GetTrafficId ());
+  sinkApp->SetLocalUdpPort (dstPortNo + sourceApp->GetTrafficId ());
   sinkApp->SetStartTime (Seconds (0));
-  m_hostNodes.Get (dstNodeId)->AddApplication (sinkApp);
+  m_hostNodes.Get (dstHostId)->AddApplication (sinkApp);
+
+  // TODO: Notify the controller about start and stop events.
+
+  // Return the traffic ID.
+  return sourceApp->GetTrafficId ();
 }
 
 } // namespace ns3

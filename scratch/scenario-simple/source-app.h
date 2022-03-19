@@ -42,6 +42,12 @@ public:
   static TypeId GetTypeId (void);
 
   /**
+   * Get the traffic ID assigned to this application.
+   * \return The traffic ID.
+   */
+  uint16_t GetTrafficId (void) const;
+
+  /**
    * Set the local UDP port number.
    * \param port The port number.
    */

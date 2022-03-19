@@ -77,6 +77,14 @@ SourceApp::GetTypeId (void)
   return tid;
 }
 
+uint16_t
+SourceApp::GetTrafficId (void) const
+{
+  NS_LOG_FUNCTION (this);
+
+  return m_trafficId;
+}
+
 void
 SourceApp::SetLocalUdpPort (uint16_t port)
 {

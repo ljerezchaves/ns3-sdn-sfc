@@ -104,7 +104,7 @@ SinkApp::ReadPacket (Ptr<Socket> socket)
   packet->PeekPacketTag (sfcTag);
   Time delay = Simulator::Now () - sfcTag.GetTimestamp ();
   NS_LOG_INFO ("Sink app received a packet of " << packet->GetSize () <<
-               " bytes from IP " << InetSocketAddress::ConvertFrom (fromAddr).GetIpv4 () <<
+               " bytes from source IP " << InetSocketAddress::ConvertFrom (fromAddr).GetIpv4 () <<
                " port " << InetSocketAddress::ConvertFrom (fromAddr).GetPort () <<
                " with traffic ID " << sfcTag.GetTrafficId () <<
                " and measured end-to-end delay of " << delay.As (Time::MS));

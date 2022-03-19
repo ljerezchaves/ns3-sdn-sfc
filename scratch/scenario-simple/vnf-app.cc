@@ -108,12 +108,12 @@ VnfApp::ReadPacket (Ptr<Packet> packet, const Address& srcMac,
   packet->PeekPacketTag (pktTag);
   uint16_t trafficId = pktTag.GetTrafficId ();
 
-  NS_LOG_INFO ("VNF " << m_vnfId << (m_keepAddress ? " 1st app" : " 2nd app") <<
-               " at switch " << m_vnfCopy <<
-               " received a packet of " << pktSize <<
-               " bytes from IP " << srcIp <<
-               " port " << srcPort <<
-               " with traffic ID " << trafficId);
+  NS_LOG_DEBUG ("VNF " << m_vnfId << (m_keepAddress ? ": 1st app" : ": 2nd app") <<
+                " at switch " << m_vnfCopy <<
+                " received a packet of " << pktSize <<
+                " bytes from source IP " << srcIp <<
+                " port " << srcPort <<
+                " with traffic ID " << trafficId);
 
   // Send an output packet based on the scaling factor.
   // For each incoming packet with an specific traffic IF, we add the scaling
@@ -154,13 +154,6 @@ VnfApp::SendPacket (uint32_t packetSize, SfcTag packetTag,
     }
   packet->AddPacketTag (packetTag);
 
-  NS_LOG_INFO ("VNF " << m_vnfId << (m_keepAddress ? " 1st app" : " 2nd app") <<
-               " at switch " << m_vnfCopy <<
-               " will send a packet of " << packetSize <<
-               " bytes to IP " << nextAddress.GetIpv4 () <<
-               " port " << nextAddress.GetPort () <<
-               " with traffic ID " << packetTag.GetTrafficId ());
-
   // Insert UDP, IPv4 and Ethernet headers into the output packet.
   Mac48Address nextMacAddr = SdnController::GetArpEntry (nextAddress.GetIpv4 ());
   InsertHeaders (packet, srcIp, nextAddress.GetIpv4 (), srcPort, nextAddress.GetPort (),
@@ -169,6 +162,13 @@ VnfApp::SendPacket (uint32_t packetSize, SfcTag packetTag,
   // Send the output packet to the OpenFlow switch over the logical port.
   m_logicalPort->Receive (packet, Ipv4L3Protocol::PROT_NUMBER,
                           dstMac, srcMac, NetDevice::PACKET_HOST);
+
+  NS_LOG_DEBUG ("VNF " << m_vnfId << (m_keepAddress ? ": 1st app" : ": 2nd app") <<
+                " at switch " << m_vnfCopy <<
+                " transmitted a packet of " << packetSize <<
+                " bytes to IP " << nextAddress.GetIpv4 () <<
+                " port " << nextAddress.GetPort () <<
+                " with traffic ID " << packetTag.GetTrafficId ());
 }
 
 void

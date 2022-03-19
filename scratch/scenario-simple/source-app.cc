@@ -178,8 +178,8 @@ SourceApp::SendPacket (uint32_t size)
   if (bytes == static_cast<int> (packet->GetSize ()))
     {
       NS_LOG_INFO ("Source app transmitted a packet of " << bytes <<
-                   " bytes to IP " << nextAddress.GetIpv4 () <<
-                   " port " << nextAddress.GetPort () <<
+                   " bytes to final IP " << finalAddress.GetIpv4 () <<
+                   " port " << finalAddress.GetPort () <<
                    " with traffic ID " << m_trafficId);
     }
 

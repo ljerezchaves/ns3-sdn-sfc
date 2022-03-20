@@ -110,9 +110,8 @@ VnfApp::ReadPacket (Ptr<Packet> packet, const Address& srcMac,
 
   NS_LOG_DEBUG (GetVnfDesc () <<
                 " received a packet of " << pktSize <<
-                " bytes from source IP " << srcIp <<
-                " port " << srcPort <<
-                " with traffic ID " << trafficId);
+                " bytes from source app at IP " << srcIp <<
+                " port " << srcPort);
 
   // Send an output packet based on the scaling factor.
   // For each incoming packet with an specific traffic IF, we add the scaling
@@ -133,35 +132,32 @@ VnfApp::GetVnfDesc (void) const
 {
   std::ostringstream cmd;
   cmd << "[VNF " << (uint16_t)m_vnfId <<
-          (m_keepAddress ? ": 1st app @ switch " : ": 2nd app @ server ") <<
-          m_vnfCopy << "]";
+  (m_keepAddress ? ": 1st app @ switch " : ": 2nd app @ server ") << m_vnfCopy << "]";
   return cmd.str ();
 }
 
 void
-VnfApp::SendPacket (uint32_t packetSize, SfcTag packetTag,
+VnfApp::SendPacket (uint32_t pktSize, SfcTag pktTag,
                     uint16_t srcPort, Ipv4Address srcIp,
                     const Address& srcMac, const Address& dstMac)
 {
-  NS_LOG_FUNCTION (this << packetSize << srcMac << dstMac);
+  NS_LOG_FUNCTION (this << pktSize << srcMac << dstMac);
 
-  Ptr<Packet> packet = Create<Packet> (packetSize);
+  Ptr<Packet> packet = Create<Packet> (pktSize);
 
   // Copy the SFC tag from the incoming to the outcoming packet
   InetSocketAddress nextAddress (Ipv4Address::GetAny ());
   if (m_keepAddress)
     {
-      // When KeepAddress attribute is set to true, don't change the destination
-      // address (which is the VNF address).
+      // Don't change the destination address (which is the VNF address).
       nextAddress = InetSocketAddress (m_ipv4Address, m_udpPort);
     }
   else
     {
-      // When KeepAddress attribute is set to false, we will get the next
-      // address from the SFC tag.
-      nextAddress = InetSocketAddress (packetTag.GetNextAddress ());
+      // Get the next address from the SFC tag.
+      nextAddress = InetSocketAddress (pktTag.GetNextAddress ());
     }
-  packet->AddPacketTag (packetTag);
+  packet->AddPacketTag (pktTag);
 
   // Insert UDP, IPv4 and Ethernet headers into the output packet.
   Mac48Address nextMacAddr = SdnController::GetArpEntry (nextAddress.GetIpv4 ());
@@ -173,10 +169,9 @@ VnfApp::SendPacket (uint32_t packetSize, SfcTag packetTag,
                           dstMac, srcMac, NetDevice::PACKET_HOST);
 
   NS_LOG_DEBUG (GetVnfDesc () <<
-                " transmitted a packet of " << packetSize <<
+                " transmitted a packet of " << pktSize <<
                 " bytes to IP " << nextAddress.GetIpv4 () <<
-                " port " << nextAddress.GetPort () <<
-                " with traffic ID " << packetTag.GetTrafficId ());
+                " port " << nextAddress.GetPort ());
 }
 
 void

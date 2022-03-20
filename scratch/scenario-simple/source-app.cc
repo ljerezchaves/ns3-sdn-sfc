@@ -198,17 +198,18 @@ SourceApp::SendPacket (uint32_t size)
   // Create the SFC packet tag and identify the next address based on the tag.
   InetSocketAddress sourceAddress (m_localIpAddress, m_localUdpPort);
   InetSocketAddress finalAddress (m_finalIpAddress, m_finalUdpPort);
-  SfcTag sfcTag (m_trafficId, m_vnfList, sourceAddress, finalAddress);
+  SfcTag sfcTag (sourceAddress, finalAddress, m_vnfList);
   InetSocketAddress nextAddress (sfcTag.GetNextAddress ());
   packet->AddPacketTag (sfcTag);
 
   int bytes = m_socket->SendTo (packet, 0, nextAddress);
   if (bytes == static_cast<int> (packet->GetSize ()))
     {
-      NS_LOG_INFO ("Source app transmitted a packet of " << bytes <<
-                   " bytes to final IP " << finalAddress.GetIpv4 () <<
-                   " port " << finalAddress.GetPort () <<
-                   " with traffic ID " << m_trafficId);
+      NS_LOG_INFO ("Source app at IP " << m_localIpAddress <<
+                   " port " << m_localUdpPort <<
+                   " transmitted a packet of " << bytes <<
+                   " bytes to sink app at IP " << m_finalIpAddress <<
+                   " port " << m_finalUdpPort);
     }
 
   // Schedule the next packet transmission.

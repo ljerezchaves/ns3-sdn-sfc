@@ -40,6 +40,11 @@ SinkApp::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<SinkApp> ()
 
+    .AddAttribute ("LocalIpAddress", "Local IPv4 address.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
+                   Ipv4AddressValue (),
+                   MakeIpv4AddressAccessor (&SinkApp::m_localIpAddress),
+                   MakeIpv4AddressChecker ())
     .AddAttribute ("LocalUdpPort", "Local UDP port.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (10000),
@@ -47,6 +52,14 @@ SinkApp::GetTypeId (void)
                    MakeUintegerChecker<uint16_t> ())
   ;
   return tid;
+}
+
+void
+SinkApp::SetLocalIpAddress (Ipv4Address address)
+{
+  NS_LOG_FUNCTION (this << address);
+
+  m_localIpAddress = address;
 }
 
 void
@@ -72,10 +85,9 @@ SinkApp::StartApplication (void)
   NS_LOG_FUNCTION (this);
 
   NS_LOG_INFO ("Opening the RX UDP socket.");
-  InetSocketAddress localAddress (Ipv4Address::GetAny (), m_localUdpPort);
   TypeId udpFactory = TypeId::LookupByName ("ns3::UdpSocketFactory");
   m_socket = Socket::CreateSocket (GetNode (), udpFactory);
-  m_socket->Bind (localAddress);
+  m_socket->Bind (InetSocketAddress (m_localIpAddress, m_localUdpPort));
   m_socket->SetRecvCallback (MakeCallback (&SinkApp::ReadPacket, this));
 }
 
@@ -103,11 +115,12 @@ SinkApp::ReadPacket (Ptr<Socket> socket)
   SfcTag sfcTag;
   packet->PeekPacketTag (sfcTag);
   Time delay = Simulator::Now () - sfcTag.GetTimestamp ();
-  NS_LOG_INFO ("Sink app received a packet of " << packet->GetSize () <<
-               " bytes from source IP " << InetSocketAddress::ConvertFrom (fromAddr).GetIpv4 () <<
+  NS_LOG_INFO ("Sink app at IP " << m_localIpAddress <<
+               " port " << m_localUdpPort <<
+               " received a packet of " << packet->GetSize () <<
+               " bytes from source app at IP " << InetSocketAddress::ConvertFrom (fromAddr).GetIpv4 () <<
                " port " << InetSocketAddress::ConvertFrom (fromAddr).GetPort () <<
-               " with traffic ID " << sfcTag.GetTrafficId () <<
-               " and measured end-to-end delay of " << delay.As (Time::MS));
+               " with end-to-end delay " << delay.As (Time::MS));
 }
 
 } // namespace ns3

@@ -48,6 +48,12 @@ public:
   uint16_t GetTrafficId (void) const;
 
   /**
+   * Set the local IPv4 address.
+   * \param address The IP address.
+   */
+  void SetLocalIpAddress (Ipv4Address address);
+
+  /**
    * Set the local UDP port number.
    * \param port The port number.
    */
@@ -104,6 +110,7 @@ private:
 
   Ptr<Socket>                 m_socket;         //!< UDP socket.
   uint16_t                    m_localUdpPort;   //!< Local UDP port.
+  Ipv4Address                 m_localIpAddress; //!< Local IPv4 address.
   uint16_t                    m_finalUdpPort;   //!< Final UDP port
   Ipv4Address                 m_finalIpAddress; //!< Final IPv4 address.
   std::vector<uint8_t>        m_vnfList;        //!< VNF list for this traffic.

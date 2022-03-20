@@ -340,6 +340,7 @@ SdnNetwork::NewTrafficFlow (
   Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
   sourceApp->SetStartTime (startTime);
   sourceApp->SetStopTime (stopTime);
+  sourceApp->SetLocalIpAddress (m_hostIfaces.GetAddress (srcHostId));
   sourceApp->SetLocalUdpPort (srcPortNo + sourceApp->GetTrafficId ());
   sourceApp->SetFinalIpAddress (m_hostIfaces.GetAddress (dstHostId));
   sourceApp->SetFinalUdpPort (dstPortNo + sourceApp->GetTrafficId ());

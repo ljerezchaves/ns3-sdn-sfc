@@ -46,6 +46,11 @@ SourceApp::GetTypeId (void)
     .SetParent<Application> ()
     .AddConstructor<SourceApp> ()
 
+    .AddAttribute ("LocalIpAddress", "Local IPv4 address.",
+                   TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
+                   Ipv4AddressValue (),
+                   MakeIpv4AddressAccessor (&SourceApp::m_localIpAddress),
+                   MakeIpv4AddressChecker ())
     .AddAttribute ("LocalUdpPort", "Local UDP port.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (10000),
@@ -91,6 +96,14 @@ SourceApp::GetTrafficId (void) const
   NS_LOG_FUNCTION (this);
 
   return m_trafficId;
+}
+
+void
+SourceApp::SetLocalIpAddress (Ipv4Address address)
+{
+  NS_LOG_FUNCTION (this << address);
+
+  m_localIpAddress = address;
 }
 
 void
@@ -143,7 +156,7 @@ SourceApp::StartApplication (void)
   NS_LOG_INFO ("Opening the TX UDP socket.");
   TypeId udpFactory = TypeId::LookupByName ("ns3::UdpSocketFactory");
   m_socket = Socket::CreateSocket (GetNode (), udpFactory);
-  m_socket->Bind (InetSocketAddress (Ipv4Address::GetAny (), m_localUdpPort));
+  m_socket->Bind (InetSocketAddress (m_localIpAddress, m_localUdpPort));
   m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket>> ());
 
   // Schedule the first packet transmission.
@@ -183,8 +196,9 @@ SourceApp::SendPacket (uint32_t size)
   Ptr<Packet> packet = Create<Packet> (size);
 
   // Create the SFC packet tag and identify the next address based on the tag.
+  InetSocketAddress sourceAddress (m_localIpAddress, m_localUdpPort);
   InetSocketAddress finalAddress (m_finalIpAddress, m_finalUdpPort);
-  SfcTag sfcTag (m_trafficId, m_vnfList, finalAddress);
+  SfcTag sfcTag (m_trafficId, m_vnfList, sourceAddress, finalAddress);
   InetSocketAddress nextAddress (sfcTag.GetNextAddress ());
   packet->AddPacketTag (sfcTag);
 

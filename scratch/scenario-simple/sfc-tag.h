@@ -36,7 +36,8 @@ public:
 
   /** Constructors */
   SfcTag ();
-  SfcTag (uint16_t trafficId, std::vector<uint8_t> vnfList, InetSocketAddress finallAddr);
+  SfcTag (uint16_t trafficId, std::vector<uint8_t> vnfList,
+          InetSocketAddress sourceAddr, InetSocketAddress finalAddr);
 
   // Inherited from Tag
   virtual void Serialize (TagBuffer i) const;
@@ -63,16 +64,20 @@ public:
    * \param advance If true, advance internal pointer in the SFC list.
    * \return The socket address.
    */
-  InetSocketAddress GetNextAddress  (bool advance = true);
+  InetSocketAddress GetNextAddress (bool advance = true);
 
 private:
-  uint64_t  m_timestamp;        //!< Packet creation timestamp.
-  uint32_t  m_finalIp;          //!< Final host IP
-  uint16_t  m_finalPort;        //!< Final host port.
-  uint16_t  m_trafficId;        //!< Traffic ID.
-  uint8_t   m_nVnfs;            //!< Number of VNFs in the chain.
-  uint8_t   m_nextVnfIdx;       //!< Next VNF ID index in the chain.
-  uint8_t   m_listVnfs[8];      //!< VNF ID chain.
+  const static size_t m_maxVnfs = 16; //!< Maximum number of VNFs in the chain.
+
+  uint64_t  m_timestamp;            //!< Packet creation timestamp.
+  uint32_t  m_sourceIp;             //!< Source host IP
+  uint16_t  m_sourcePort;           //!< Source host port.
+  uint32_t  m_finalIp;              //!< Final host IP
+  uint16_t  m_finalPort;            //!< Final host port.
+  uint16_t  m_trafficId;            //!< Traffic ID.
+  uint8_t   m_nVnfs;                //!< Number of VNFs in the chain.
+  uint8_t   m_nextVnfIdx;           //!< Next VNF ID index in the chain.
+  uint8_t   m_listVnfs[m_maxVnfs];  //!< VNF ID chain.
 };
 
 } // namespace ns3

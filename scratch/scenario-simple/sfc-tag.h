@@ -36,8 +36,8 @@ public:
 
   /** Constructors */
   SfcTag ();
-  SfcTag (uint16_t trafficId, std::vector<uint8_t> vnfList,
-          InetSocketAddress sourceAddr, InetSocketAddress finalAddr);
+  SfcTag (InetSocketAddress sourceAddr, InetSocketAddress finalAddr,
+          std::vector<uint8_t> vnfList);
 
   // Inherited from Tag
   virtual void Serialize (TagBuffer i) const;
@@ -52,7 +52,7 @@ public:
   Time GetTimestamp (void) const;
 
   /**
-   * Get the traffic identification value.
+   * Get the traffic identification value, which is the source UDP port number.
    * \return The traffic ID.
    */
   uint16_t GetTrafficId (void) const;

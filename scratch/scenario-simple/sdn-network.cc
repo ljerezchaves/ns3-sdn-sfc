@@ -358,6 +358,7 @@ SdnNetwork::NewTrafficFlow (
 
   // Create the sink application
   Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
+  sinkApp->SetLocalIpAddress (m_hostIfaces.GetAddress (dstHostId));
   sinkApp->SetLocalUdpPort (dstPortNo + sourceApp->GetTrafficId ());
   sinkApp->SetStartTime (Seconds (0));
   m_hostNodes.Get (dstHostId)->AddApplication (sinkApp);

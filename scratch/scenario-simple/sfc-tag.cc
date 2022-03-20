@@ -23,23 +23,23 @@ NS_OBJECT_ENSURE_REGISTERED (SfcTag);
 
 SfcTag::SfcTag ()
   : m_timestamp (Simulator::Now ().GetTimeStep ()),
+    m_sourceIp (0),
+    m_sourcePort (0),
     m_finalIp (0),
     m_finalPort (0),
-    m_trafficId (0),
     m_nVnfs (0),
     m_nextVnfIdx (0)
 {
   memset (m_listVnfs, 0, m_maxVnfs);
 }
 
-SfcTag::SfcTag (uint16_t trafficId, std::vector<uint8_t> vnfList,
-                InetSocketAddress sourceAddr, InetSocketAddress finalAddr)
+SfcTag::SfcTag (InetSocketAddress sourceAddr, InetSocketAddress finalAddr,
+                std::vector<uint8_t> vnfList)
   : m_timestamp (Simulator::Now ().GetTimeStep ()),
-    m_trafficId (trafficId),
     m_nVnfs (vnfList.size ()),
     m_nextVnfIdx (0)
 {
-  NS_ASSERT_MSG (m_nVnfs <= m_maxVnfs, "Maximum number of VNFs in SFC exceeded.");
+  NS_ASSERT_MSG (m_nVnfs <= m_maxVnfs, "Maximum number of VNFs exceeded.");
 
   m_sourceIp = sourceAddr.GetIpv4 ().Get ();
   m_sourcePort = sourceAddr.GetPort ();
@@ -71,7 +71,7 @@ SfcTag::GetInstanceTypeId (void) const
 uint32_t
 SfcTag::GetSerializedSize (void) const
 {
-  return 24 + m_maxVnfs;
+  return 22 + m_maxVnfs;
 }
 
 void
@@ -82,7 +82,6 @@ SfcTag::Serialize (TagBuffer i) const
   i.WriteU16 (m_sourcePort);
   i.WriteU32 (m_finalIp);
   i.WriteU16 (m_finalPort);
-  i.WriteU16 (m_trafficId);
   i.WriteU8  (m_nVnfs);
   i.WriteU8  (m_nextVnfIdx);
   i.Write    (m_listVnfs, m_maxVnfs);
@@ -96,7 +95,6 @@ SfcTag::Deserialize (TagBuffer i)
   m_sourcePort  = i.ReadU16 ();
   m_finalIp     = i.ReadU32 ();
   m_finalPort   = i.ReadU16 ();
-  m_trafficId   = i.ReadU16 ();
   m_nVnfs       = i.ReadU8 ();
   m_nextVnfIdx  = i.ReadU8 ();
   i.Read (m_listVnfs, m_maxVnfs);
@@ -110,7 +108,6 @@ SfcTag::Print (std::ostream &os) const
      << " sourcePort:" << (uint16_t) m_sourcePort
      << " finalIp:" << Ipv4Address (m_finalIp)
      << " finalPort:" << (uint16_t) m_finalPort
-     << " traffId:" << (uint16_t) m_trafficId
      << " numOfVnfs:" << (uint16_t) m_nVnfs
      << " nextVnfIdx:" << (uint16_t) m_nextVnfIdx
      << " vnfList:";
@@ -130,7 +127,7 @@ SfcTag::GetTimestamp (void) const
 uint16_t
 SfcTag::GetTrafficId (void) const
 {
-  return m_trafficId;
+  return m_sourcePort;
 }
 
 InetSocketAddress

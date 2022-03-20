@@ -42,38 +42,6 @@ public:
   static TypeId GetTypeId (void);
 
   /**
-   * Get the traffic ID assigned to this application.
-   * \return The traffic ID.
-   */
-  uint16_t GetTrafficId (void) const;
-
-  /**
-   * Set the local IPv4 address.
-   * \param address The IP address.
-   */
-  void SetLocalIpAddress (Ipv4Address address);
-
-  /**
-   * Set the local UDP port number.
-   * \param port The port number.
-   */
-  void SetLocalUdpPort (uint16_t port);
-
-  /**
-   * Set the final IPv4 address.
-   * This is the IPv4 on the host at the end of this traffic.
-   * \param address The IP address.
-   */
-  void SetFinalIpAddress (Ipv4Address address);
-
-  /**
-   * Set the final UDP port number.
-   * This is the UDP port number on the host at the end of this traffic.
-   * \param port The port number.
-   */
-  void SetFinalUdpPort (uint16_t port);
-
-  /**
    * Set the list of VNF IDs for intermediate traffic processing.
    * This list is empty by default, which means the traffic will flow
    * directly from this source application to the sink application.
@@ -118,9 +86,6 @@ private:
   Ptr<RandomVariableStream>   m_pktInterRng;    //!< Packet inter-arrival time.
   Ptr<RandomVariableStream>   m_pktSizeRng;     //!< Packet size.
   EventId                     m_sendEvent;      //!< SendPacket event.
-
-  uint16_t                    m_trafficId;      //!< Traffic ID for this app.
-  static uint16_t             m_trafficCounter; //!< Global traffic ID counter.
 };
 
 } // namespace ns3

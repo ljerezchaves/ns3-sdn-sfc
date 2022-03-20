@@ -39,18 +39,6 @@ public:
    */
   static TypeId GetTypeId (void);
 
-  /**
-   * Set the local IPv4 address.
-   * \param address The IP address.
-   */
-  void SetLocalIpAddress (Ipv4Address address);
-
-  /**
-   * Set the local UDP port number.
-   * \param port The port number.
-   */
-  void SetLocalUdpPort (uint16_t port);
-
 protected:
   /** Destructor implementation */
   virtual void DoDispose (void);

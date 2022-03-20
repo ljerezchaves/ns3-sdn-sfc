@@ -320,53 +320,106 @@ SdnNetwork::ConfigureTraffic (void)
       m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (v));
     }
 
-  NewTrafficFlow (2, 2, {5, 4}, Seconds (1), Seconds (3));
-  NewTrafficFlow (2, 2, {3, 2}, Seconds (5), Seconds (7),
-                  "ns3::ConstantRandomVariable[Constant=1250]",
-                  "ns3::ConstantRandomVariable[Constant=0.5]");
+  NewServiceTraffic (2, 2, {5, 4}, Seconds (1), Seconds (6));
+  NewServiceTraffic (2, 2, {3, 2}, Seconds (5), Seconds (10),
+                     "ns3::ConstantRandomVariable[Constant=1250]",
+                     "ns3::ConstantRandomVariable[Constant=0.5]");
+
+  NewBackgroundTraffic (2, 2, Seconds (0.5), Seconds (4));
 }
 
-uint16_t
-SdnNetwork::NewTrafficFlow (
-  uint32_t srcHostId, uint32_t dstHostId, std::vector<uint8_t> vnfList,
-  Time startTime, Time stopTime, std::string pktSize, std::string pktInterval)
+void
+SdnNetwork::NewServiceTraffic (
+  uint32_t srcHostId, uint32_t dstHostId,
+  std::vector<uint8_t> vnfList, Time startTime, Time stopTime,
+  std::string pktSizeDesc, std::string pktIntervalDesc)
 {
-  NS_LOG_FUNCTION (this << srcHostId << dstHostId);
+  NS_LOG_FUNCTION (this << srcHostId << dstHostId << startTime << stopTime);
 
-  uint16_t srcPortNo = 10000;
-  uint16_t dstPortNo = 30000;
+  static uint16_t serviceFlowCounter = 0;
+
+  // Increase the flow counter
+  serviceFlowCounter++;
+
+  // Define UDP port numbers (which are used as flow IDs)
+  uint16_t srcPortNo = 10000 + serviceFlowCounter;
+  uint16_t dstPortNo = 20000 + serviceFlowCounter;
 
   // Create the source application
-  Ptr<SourceApp> sourceApp = CreateObject<SourceApp> ();
+  Ptr<SourceApp> sourceApp = CreateObjectWithAttributes<SourceApp> (
+    "LocalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (srcHostId)),
+    "LocalUdpPort",   UintegerValue (srcPortNo),
+    "FinalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (dstHostId)),
+    "FinalUdpPort",   UintegerValue (dstPortNo)
+  );
+  sourceApp->SetVnfList (vnfList);
   sourceApp->SetStartTime (startTime);
   sourceApp->SetStopTime (stopTime);
-  sourceApp->SetLocalIpAddress (m_hostIfaces.GetAddress (srcHostId));
-  sourceApp->SetLocalUdpPort (srcPortNo + sourceApp->GetTrafficId ());
-  sourceApp->SetFinalIpAddress (m_hostIfaces.GetAddress (dstHostId));
-  sourceApp->SetFinalUdpPort (dstPortNo + sourceApp->GetTrafficId ());
-  sourceApp->SetVnfList (vnfList);
+  if (!pktSizeDesc.empty ())
+    {
+      sourceApp->SetAttribute ("PktSize", StringValue (pktSizeDesc));
+    }
+  if (!pktIntervalDesc.empty ())
+    {
+      sourceApp->SetAttribute ("PktInterval", StringValue (pktIntervalDesc));
+    }
   m_hostNodes.Get (srcHostId)->AddApplication (sourceApp);
 
-  if (!pktSize.empty ())
-    {
-      sourceApp->SetAttribute ("PktSize", StringValue (pktSize));
-    }
-  if (!pktInterval.empty ())
-    {
-      sourceApp->SetAttribute ("PktInterval", StringValue (pktInterval));
-    }
-
   // Create the sink application
-  Ptr<SinkApp> sinkApp = CreateObject<SinkApp> ();
-  sinkApp->SetLocalIpAddress (m_hostIfaces.GetAddress (dstHostId));
-  sinkApp->SetLocalUdpPort (dstPortNo + sourceApp->GetTrafficId ());
+  Ptr<SinkApp> sinkApp = CreateObjectWithAttributes<SinkApp> (
+    "LocalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (dstHostId)),
+    "LocalUdpPort",   UintegerValue (dstPortNo)
+  );
   sinkApp->SetStartTime (Seconds (0));
   m_hostNodes.Get (dstHostId)->AddApplication (sinkApp);
 
   // TODO: Notify the controller about start and stop events.
+}
 
-  // Return the traffic ID.
-  return sourceApp->GetTrafficId ();
+void
+SdnNetwork::NewBackgroundTraffic (
+  uint32_t srcHostId, uint32_t dstHostId, Time startTime, Time stopTime,
+  std::string pktSizeDesc, std::string pktIntervalDesc)
+{
+  NS_LOG_FUNCTION (this << srcHostId << dstHostId << startTime << stopTime);
+
+  static uint16_t backgroundFlowCounter = 0;
+
+  // Increase the flow counter
+  backgroundFlowCounter++;
+
+  // Define UDP port numbers (which are used as flow IDs)
+  uint16_t srcPortNo = 30000 + backgroundFlowCounter;
+  uint16_t dstPortNo = 40000 + backgroundFlowCounter;
+
+  // Create the source application
+  Ptr<SourceApp> sourceApp = CreateObjectWithAttributes<SourceApp> (
+    "LocalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (srcHostId)),
+    "LocalUdpPort",   UintegerValue (srcPortNo),
+    "FinalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (dstHostId)),
+    "FinalUdpPort",   UintegerValue (dstPortNo)
+  );
+  sourceApp->SetStartTime (startTime);
+  sourceApp->SetStopTime (stopTime);
+  if (!pktSizeDesc.empty ())
+    {
+      sourceApp->SetAttribute ("PktSize", StringValue (pktSizeDesc));
+    }
+  if (!pktIntervalDesc.empty ())
+    {
+      sourceApp->SetAttribute ("PktInterval", StringValue (pktIntervalDesc));
+    }
+  m_hostNodes.Get (srcHostId)->AddApplication (sourceApp);
+
+  // Create the sink application
+  Ptr<SinkApp> sinkApp = CreateObjectWithAttributes<SinkApp> (
+    "LocalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (dstHostId)),
+    "LocalUdpPort",   UintegerValue (dstPortNo)
+  );
+  sinkApp->SetStartTime (Seconds (0));
+  m_hostNodes.Get (dstHostId)->AddApplication (sinkApp);
+
+  // TODO: Notify the controller about start and stop events.
 }
 
 } // namespace ns3

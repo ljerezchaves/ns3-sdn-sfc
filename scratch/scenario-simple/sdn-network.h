@@ -67,7 +67,7 @@ protected:
   void ConfigureTraffic (void);
 
   /**
-   * Method to create a new traffic flow in the network.
+   * Create a new SFC traffic flow in the network.
    * \param srcHostId The source host node ID.
    * \param dstHostId The destination host node ID.
    * \param vnfList The list of VNF IDs for this traffic.
@@ -75,11 +75,24 @@ protected:
    * \param stopTime The application stop time.
    * \param pktSize The description of the packet size for this traffic.
    * \param pktInterval The description of the packet interval for this traffic.
-   * \return The traffic ID.
    */
-  uint16_t NewTrafficFlow (
-    uint32_t srcHostId, uint32_t dstHostId, std::vector<uint8_t> vnfList,
-    Time startTime, Time stopTime, std::string pktSize = "", std::string pktInterval = "");
+  void NewServiceTraffic (
+    uint32_t srcHostId, uint32_t dstHostId,
+    std::vector<uint8_t> vnfList, Time startTime, Time stopTime,
+    std::string pktSizeDesc = "", std::string pktIntervalDesc = "");
+
+  /**
+   * Create a new background traffic flow in the network.
+   * \param srcHostId The source host node ID.
+   * \param dstHostId The destination host node ID.
+   * \param startTime The application start time.
+   * \param stopTime The application stop time.
+   * \param pktSize The description of the packet size for this traffic.
+   * \param pktInterval The description of the packet interval for this traffic.
+   */
+  void NewBackgroundTraffic (
+    uint32_t srcHostId, uint32_t dstHostId, Time startTime, Time stopTime,
+    std::string pktSizeDesc = "", std::string pktIntervalDesc = "");
 
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app

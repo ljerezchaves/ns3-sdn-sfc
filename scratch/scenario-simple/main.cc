@@ -116,6 +116,10 @@ EnableVerbose (bool enable)
         LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_WARN | LOG_INFO);
       NS_UNUSED (logLevelWarnInfo);
 
+      LogLevel logLevelWarnInfoDebug = static_cast<ns3::LogLevel> (
+        LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_WARN | LOG_INFO | LOG_DEBUG);
+      NS_UNUSED (logLevelWarnInfoDebug);
+
       LogLevel logLevelInfo = static_cast<ns3::LogLevel> (
         LOG_PREFIX_FUNC | LOG_PREFIX_TIME | LOG_LEVEL_INFO);
       NS_UNUSED (logLevelInfo);
@@ -128,7 +132,7 @@ EnableVerbose (bool enable)
       LogComponentEnable ("SdnNetwork",               logLevelWarnInfo);
       LogComponentEnable ("SourceApp",                logLevelWarnInfo);
       LogComponentEnable ("SinkApp",                  logLevelWarnInfo);
-      LogComponentEnable ("VnfApp",                   logLevelWarnInfo);
+      LogComponentEnable ("VnfApp",                   logLevelWarnInfoDebug);
 
       // OFSwitch13 module components.
       LogComponentEnable ("OFSwitch13Controller",     logLevelWarn);

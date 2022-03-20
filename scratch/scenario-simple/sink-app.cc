@@ -47,27 +47,11 @@ SinkApp::GetTypeId (void)
                    MakeIpv4AddressChecker ())
     .AddAttribute ("LocalUdpPort", "Local UDP port.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
-                   UintegerValue (10000),
+                   UintegerValue (20000),
                    MakeUintegerAccessor (&SinkApp::m_localUdpPort),
                    MakeUintegerChecker<uint16_t> ())
   ;
   return tid;
-}
-
-void
-SinkApp::SetLocalIpAddress (Ipv4Address address)
-{
-  NS_LOG_FUNCTION (this << address);
-
-  m_localIpAddress = address;
-}
-
-void
-SinkApp::SetLocalUdpPort (uint16_t port)
-{
-  NS_LOG_FUNCTION (this << port);
-
-  m_localUdpPort = port;
 }
 
 void

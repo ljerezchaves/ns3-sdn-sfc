@@ -25,14 +25,14 @@ NS_OBJECT_ENSURE_REGISTERED (VnfInfo);
 // Initializing VnfInfo static members.
 VnfInfo::VnfInfoMap_t VnfInfo::m_vnfInfoById;
 
-VnfInfo::VnfInfo (uint32_t vnfId)
+VnfInfo::VnfInfo (uint8_t vnfId)
   : m_vnfId (vnfId),
     m_copyCounter (0),
     m_vnfUdpPort (9999),
     m_csf (1),
     m_nsf (1)
 {
-  NS_LOG_FUNCTION (this);
+  NS_LOG_FUNCTION (this << (uint16_t)vnfId);
 
   // Allocate virtual IP and MAC addresses for this VNF
   uint32_t baseAddr = Ipv4Address ("10.20.0.0").Get ();
@@ -74,7 +74,7 @@ VnfInfo::GetTypeId (void)
   return tid;
 }
 
-uint32_t
+uint8_t
 VnfInfo::GetVnfId (void) const
 {
   NS_LOG_FUNCTION (this);
@@ -166,7 +166,7 @@ VnfInfo::CreateVnfApps (void)
 }
 
 Ptr<VnfInfo>
-VnfInfo::GetPointer (uint32_t vnfId)
+VnfInfo::GetPointer (uint8_t vnfId)
 {
   NS_LOG_FUNCTION_NOARGS ();
 
@@ -195,7 +195,7 @@ VnfInfo::RegisterVnfInfo (Ptr<VnfInfo> vnfInfo)
   NS_LOG_FUNCTION_NOARGS ();
 
   uint32_t vnfId = vnfInfo->GetVnfId ();
-  std::pair<uint32_t, Ptr<VnfInfo>> entry (vnfId, vnfInfo);
+  std::pair<uint8_t, Ptr<VnfInfo>> entry (vnfId, vnfInfo);
   auto ret = VnfInfo::m_vnfInfoById.insert (entry);
   NS_ABORT_MSG_IF (ret.second == false, "Existing VNF info with this ID.");
 }

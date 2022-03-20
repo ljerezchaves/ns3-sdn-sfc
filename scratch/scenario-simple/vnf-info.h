@@ -35,7 +35,7 @@ public:
    * Complete constructor.
    * \param vnfId The VNF ID.
    */
-  VnfInfo (uint32_t vnfId);
+  VnfInfo (uint8_t vnfId);
   virtual ~VnfInfo ();      //!< Dummy destructor, see DoDispose.
 
   /**
@@ -49,7 +49,7 @@ public:
    * \return The requested information.
    */
   //\{
-  uint32_t      GetVnfId      (void) const;
+  uint8_t       GetVnfId      (void) const;
   Ipv4Address   GetIpAddr     (void) const;
   Mac48Address  GetMacAddr    (void) const;
   uint16_t      GetUdpPort    (void) const;
@@ -75,14 +75,14 @@ public:
    * \param vnfId The VNF ID.
    * \return The VNF information.
    */
-  static Ptr<VnfInfo> GetPointer (uint32_t vnfId);
+  static Ptr<VnfInfo> GetPointer (uint8_t vnfId);
 
 protected:
   /** Destructor implementation. */
   virtual void DoDispose ();
 
 private:
-  uint32_t        m_vnfId;            //!< VNF ID
+  uint8_t         m_vnfId;            //!< VNF ID
   uint32_t        m_copyCounter;      //!< VNF copy counter
   Ipv4Address     m_vnfIpAddress;     //!< VNF IPv4 address
   Mac48Address    m_vnfMacAddress;    //!< VNF MAC address
@@ -105,7 +105,7 @@ private:
   static void RegisterVnfInfo (Ptr<VnfInfo> vnfInfo);
 
   /** Map saving VNF ID / VNF information. */
-  typedef std::map<uint32_t, Ptr<VnfInfo>> VnfInfoMap_t;
+  typedef std::map<uint8_t, Ptr<VnfInfo>> VnfInfoMap_t;
   static VnfInfoMap_t m_vnfInfoById;  //!< Global VNF info map.
 };
 

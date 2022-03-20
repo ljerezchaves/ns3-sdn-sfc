@@ -47,7 +47,7 @@ VnfApp::GetTypeId (void)
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (0),
                    MakeUintegerAccessor (&VnfApp::m_vnfId),
-                   MakeUintegerChecker<uint32_t> ())
+                   MakeUintegerChecker<uint8_t> ())
     .AddAttribute ("VnfCopy", "VNF copy number.",
                    TypeId::ATTR_GET | TypeId::ATTR_CONSTRUCT,
                    UintegerValue (0),
@@ -108,8 +108,7 @@ VnfApp::ReadPacket (Ptr<Packet> packet, const Address& srcMac,
   packet->PeekPacketTag (pktTag);
   uint16_t trafficId = pktTag.GetTrafficId ();
 
-  NS_LOG_DEBUG ("VNF " << m_vnfId << (m_keepAddress ? ": 1st app" : ": 2nd app") <<
-                " at switch " << m_vnfCopy <<
+  NS_LOG_DEBUG (GetVnfDesc () <<
                 " received a packet of " << pktSize <<
                 " bytes from source IP " << srcIp <<
                 " port " << srcPort <<
@@ -127,6 +126,16 @@ VnfApp::ReadPacket (Ptr<Packet> packet, const Address& srcMac,
     }
 
   return true;
+}
+
+std::string
+VnfApp::GetVnfDesc (void) const
+{
+  std::ostringstream cmd;
+  cmd << "[VNF " << (uint16_t)m_vnfId <<
+          (m_keepAddress ? ": 1st app @ switch " : ": 2nd app @ server ") <<
+          m_vnfCopy << "]";
+  return cmd.str ();
 }
 
 void
@@ -163,8 +172,7 @@ VnfApp::SendPacket (uint32_t packetSize, SfcTag packetTag,
   m_logicalPort->Receive (packet, Ipv4L3Protocol::PROT_NUMBER,
                           dstMac, srcMac, NetDevice::PACKET_HOST);
 
-  NS_LOG_DEBUG ("VNF " << m_vnfId << (m_keepAddress ? ": 1st app" : ": 2nd app") <<
-                " at switch " << m_vnfCopy <<
+  NS_LOG_DEBUG (GetVnfDesc () <<
                 " transmitted a packet of " << packetSize <<
                 " bytes to IP " << nextAddress.GetIpv4 () <<
                 " port " << nextAddress.GetPort () <<
@@ -177,6 +185,7 @@ VnfApp::DoDispose (void)
   NS_LOG_FUNCTION (this);
 
   m_logicalPort = 0;
+  m_pktAdjust.clear ();
   Application::DoDispose ();
 }
 

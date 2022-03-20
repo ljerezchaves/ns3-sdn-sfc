@@ -67,6 +67,16 @@ public:
   bool ReadPacket (Ptr<Packet> packet, const Address& srcMac,
                    const Address& dstMac, uint16_t protocolNo);
 
+protected:
+  /** Destructor implementation */
+  virtual void DoDispose (void);
+
+  /**
+   * The the VNF description, including VNF ID, application number and switch.
+   * \return The VNF description.
+   */
+  std::string GetVnfDesc (void) const;
+
   /**
    * Create and send a new packet.
    * \param packetSize The packet size to create.
@@ -79,10 +89,6 @@ public:
   void SendPacket (uint32_t packetSize, SfcTag packetTag,
                    uint16_t srcPort, Ipv4Address srcIp,
                    const Address& srcMac, const Address& dstMac);
-
-protected:
-  /** Destructor implementation */
-  virtual void DoDispose (void);
 
   /**
    * Remove and check the IPv4 and UDP headers from the incoming packet.
@@ -106,18 +112,18 @@ protected:
     uint16_t srcPort, uint16_t dstPort, Mac48Address srcMac, Mac48Address dstMac);
 
 private:
-  uint32_t              m_vnfId;            //!< VNF ID.
+  uint8_t               m_vnfId;            //!< VNF ID.
   uint32_t              m_vnfCopy;          //!< VNF copy.
   Ipv4Address           m_ipv4Address;      //!< Local IPv4 address.
   uint16_t              m_udpPort;          //!< Local UDP port.
   bool                  m_keepAddress;      //!< Keep VNF address.
-
-  double                m_scalingFactor;    //!< Packet size scaling factor.
+  double                m_scalingFactor;    //!< Traffic scaling factor.
   EventId               m_sendEvent;        //!< SendPacket event.
-
-  std::map<uint16_t, double> m_pktAdjust;   //!< Packet transmission adjustment.
-
   Ptr<VirtualNetDevice> m_logicalPort;      //!< OpenFlow logical port device.
+
+  /** Map saving source port number to output packet adjustment */
+  typedef std::map<uint16_t, double> PortDoubleMap_t;
+  PortDoubleMap_t       m_pktAdjust;        //!< Packet transmission adjustment.
 };
 
 } // namespace ns3

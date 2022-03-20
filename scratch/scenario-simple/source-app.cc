@@ -73,6 +73,14 @@ SourceApp::GetTypeId (void)
                    StringValue ("ns3::ConstantRandomVariable[Constant=100]"),
                    MakePointerAccessor (&SourceApp::m_pktSizeRng),
                    MakePointerChecker <RandomVariableStream> ())
+
+    // Trace sources for start and stop events
+    .AddTraceSource ("AppStart", "Application start trace source.",
+                     MakeTraceSourceAccessor (&SourceApp::m_appStartTrace),
+                     "ns3::Uni5onClient::SourceAppTracedCallback")
+    .AddTraceSource ("AppStop", "Application stop trace source.",
+                     MakeTraceSourceAccessor (&SourceApp::m_appStopTrace),
+                     "ns3::Uni5onClient::SourceAppTracedCallback")
   ;
   return tid;
 }
@@ -143,6 +151,9 @@ SourceApp::StartApplication (void)
   Time sendTime = Seconds (std::abs (m_pktInterRng->GetValue ()));
   uint32_t newSize = m_pktSizeRng->GetInteger ();
   m_sendEvent = Simulator::Schedule (sendTime, &SourceApp::SendPacket, this, newSize);
+
+  // Fire trace source
+  m_appStartTrace (this);
 }
 
 void
@@ -159,6 +170,9 @@ SourceApp::StopApplication ()
       m_socket->Dispose ();
       m_socket = 0;
     }
+
+  // Fire trace source
+  m_appStopTrace (this);
 }
 
 void

@@ -75,9 +75,21 @@ public:
    */
   void SetVnfList (std::vector<uint8_t> vnfList);
 
+  /**
+   * TracedCallback signature for Ptr<SourceApp>.
+   * \param app The source application.
+   */
+  typedef void (*SourceAppTracedCallback)(Ptr<SourceApp> app);
+
 protected:
   /** Destructor implementation */
   virtual void DoDispose (void);
+
+  /** Trace source fired when the application start. */
+  TracedCallback<Ptr<SourceApp>> m_appStartTrace;
+
+  /** Trace source fired when the application stops. */
+  TracedCallback<Ptr<SourceApp>> m_appStopTrace;
 
 private:
   // Inherited from Application.

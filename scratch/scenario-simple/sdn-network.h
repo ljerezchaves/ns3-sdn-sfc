@@ -88,6 +88,14 @@ public:
    */
   uint32_t GetServerSwitchDpId (uint32_t serverId) const;
 
+  /**
+   * Get the port number connecting the network switches.
+   * \param srcNodeId The source network switch ID.
+   * \param dstNodeId The destination network switch ID.
+   * \return The OpenFlow port number.
+   */
+  uint32_t GetNetworkPortNo (uint32_t srcNodeId, uint32_t dstNodeId) const;
+
 protected:
   /** Destructor implementation. */
   virtual void DoDispose (void);

@@ -33,8 +33,8 @@ int
 main (int argc, char *argv[])
 {
   // Command line arguments.
-  int   progress = 1;
-  int   simTime  = 10;
+  int   progress = 10;
+  int   simTime  = 60;
   bool  verbose  = false;
   bool  libLog   = false;
   bool  pcapLog  = false;
@@ -68,16 +68,36 @@ main (int argc, char *argv[])
   VnfInfo::GetPointer (2)->SetScalingFactors (2.2, 0.7);
   VnfInfo::GetPointer (3)->SetScalingFactors (2.2, 0.7);
   // VNFs 4 and 5: expansion service
-  VnfInfo::GetPointer (4)->SetScalingFactors (1.4, 1.8);
-  VnfInfo::GetPointer (5)->SetScalingFactors (1.4, 1.8);
+  // VnfInfo::GetPointer (4)->SetScalingFactors (1.4, 1.8);
+  // VnfInfo::GetPointer (5)->SetScalingFactors (1.4, 1.8);
+  VnfInfo::GetPointer (4)->SetScalingFactors (1, 1);
+  VnfInfo::GetPointer (5)->SetScalingFactors (1, 1);
 
   // Create network traffic
-  sdnNetwork->NewServiceTraffic (2, 2, {5, 4}, Seconds (1), Seconds (6));
-  sdnNetwork->NewServiceTraffic (2, 2, {3, 2}, Seconds (5), Seconds (10),
-                                 "ns3::ConstantRandomVariable[Constant=1250]",
-                                 "ns3::ConstantRandomVariable[Constant=0.5]");
+  sdnNetwork->NewServiceTraffic (
+    1, 2, {1, 3}, Seconds (5), Seconds (10),
+    "ns3::ConstantRandomVariable[Constant=1250]",
+    "ns3::ConstantRandomVariable[Constant=0.5]");
+  sdnNetwork->NewServiceTraffic (
+    2, 2, {4, 5}, Seconds (25), Seconds (40));
 
-  sdnNetwork->NewBackgroundTraffic (2, 2, Seconds (0.5), Seconds (4));
+  // sdnNetwork->NewBackgroundTraffic (
+  //   1, 0, Seconds (10), Seconds (25),
+  //   "ns3::ConstantRandomVariable[Constant=1000]",
+  //   "ns3::ConstantRandomVariable[Constant=0.1]");
+  // sdnNetwork->NewBackgroundTraffic (
+  //   0, 1, Seconds (10), Seconds (25),
+  //   "ns3::ConstantRandomVariable[Constant=1000]",
+  //   "ns3::ConstantRandomVariable[Constant=0.1]");
+  // sdnNetwork->NewBackgroundTraffic (
+  //   2, 0, Seconds (15), Seconds (30),
+  //   "ns3::ConstantRandomVariable[Constant=512]",
+  //   "ns3::ConstantRandomVariable[Constant=0.01]");
+  // sdnNetwork->NewBackgroundTraffic (
+  //   0, 2, Seconds (15), Seconds (30),
+  //   "ns3::ConstantRandomVariable[Constant=512]",
+  //   "ns3::ConstantRandomVariable[Constant=0.01]");
+
 
   // ------------------------------------------------------------------------ //
 

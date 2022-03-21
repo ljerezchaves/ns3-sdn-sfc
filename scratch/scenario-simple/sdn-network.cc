@@ -81,6 +81,14 @@ SdnNetwork::GetServerSwitchDpId (uint32_t serverId) const
   return m_serverSwitchDevs.Get (serverId)->GetDatapathId ();
 }
 
+uint32_t
+SdnNetwork::GetNetworkPortNo (uint32_t srcNodeId, uint32_t dstNodeId) const
+{
+  NS_LOG_FUNCTION (this << srcNodeId << dstNodeId);
+
+  return m_networkToNetworkPorts[srcNodeId][dstNodeId]->GetPortNo ();
+}
+
 void
 SdnNetwork::EnablePcap (bool enable)
 {
@@ -367,7 +375,9 @@ SdnNetwork::NewServiceTraffic (
 
   // Notify the controller about this new traffic
   m_controllerApp->NotifyNewServiceTraffic (
-    srcHostId, dstHostId, srcPortNo, dstPortNo, vnfList, startTime, stopTime);
+    InetSocketAddress (m_hostIfaces.GetAddress (srcHostId), srcPortNo),
+    InetSocketAddress (m_hostIfaces.GetAddress (dstHostId), dstPortNo),
+    srcHostId, dstHostId, vnfList, startTime, stopTime);
 }
 
 void
@@ -413,7 +423,9 @@ SdnNetwork::NewBackgroundTraffic (
 
   // Notify the controller about this new traffic
   m_controllerApp->NotifyNewBackgroundTraffic (
-    srcHostId, dstHostId, srcPortNo, dstPortNo, startTime, stopTime);
+    InetSocketAddress (m_hostIfaces.GetAddress (srcHostId), srcPortNo),
+    InetSocketAddress (m_hostIfaces.GetAddress (dstHostId), dstPortNo),
+    srcHostId, dstHostId, startTime, stopTime);
 }
 
 } // namespace ns3

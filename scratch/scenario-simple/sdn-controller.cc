@@ -139,64 +139,96 @@ SdnController::NotifyVnfAttach (
 
 void
 SdnController::NotifyNewServiceTraffic (
-  uint32_t srcHostId, uint32_t dstHostId, uint16_t srcPort, uint16_t dstPort,
-  std::vector<uint8_t> vnfList, Time startTime, Time stopTime)
+  InetSocketAddress srcAddress, InetSocketAddress dstAddress,
+  uint32_t srcHostId, uint32_t dstHostId, std::vector<uint8_t> vnfList,
+  Time startTime, Time stopTime)
 {
-  NS_LOG_FUNCTION (this << srcHostId << dstHostId << srcPort <<
-                   dstPort << startTime << stopTime);
+  NS_LOG_FUNCTION (this << srcAddress << dstAddress << srcHostId <<
+                   dstHostId << startTime << stopTime);
 
-  // TODO
 
+  // FIXME: Just for testing....
+  // Activate all VNFs in the core for this traffic
   for (auto vnfId : vnfList)
     {
-      ActivateVnf (vnfId, srcHostId, srcPort);
+      SetUpVnf (vnfId, 0, srcAddress);
     }
-
+  // Forward input traffic to the core switch.
+  RouteTraffic (srcAddress, VnfInfo::GetPointer (vnfList.front ())->GetInetAddr (), srcHostId, 0);
+  // Forward output traffic to the edge switch.
+  RouteTraffic (srcAddress, dstAddress, 0, dstHostId);
 }
 
 void
 SdnController::NotifyNewBackgroundTraffic (
-  uint32_t srcHostId, uint32_t dstHostId, uint16_t srcPort, uint16_t dstPort,
+  InetSocketAddress srcAddress, InetSocketAddress dstAddress,
+  uint32_t srcHostId, uint32_t dstHostId,
   Time startTime, Time stopTime)
 {
-  NS_LOG_FUNCTION (this << srcHostId << dstHostId << srcPort <<
-                   dstPort << startTime << stopTime);
+  NS_LOG_FUNCTION (this << srcAddress << dstAddress << srcHostId <<
+                   dstHostId << startTime << stopTime);
 
-  // TODO
+  // FIXME Just for testing...
+  Simulator::Schedule (startTime - Seconds (1), &SdnController::RouteTraffic,
+                       this, srcAddress, dstAddress, srcHostId, dstHostId);
 }
 
 void
-SdnController::ActivateVnf (
-  uint8_t vnfId, uint32_t serverId, uint16_t trafficId)
+SdnController::SetUpVnf (
+  uint8_t vnfId, uint32_t serverId, InetSocketAddress srcAddress)
 {
-  NS_LOG_FUNCTION (this << (uint16_t)vnfId << serverId << trafficId);
+  NS_LOG_FUNCTION (this << (uint16_t)vnfId << serverId << srcAddress);
 
   // Sends the packets addressed to the VNF to the pipeline table 1.
   std::ostringstream cmd;
-  cmd << "flow-mod cmd=add,prio=1024,table=0"
+  cmd << "flow-mod cmd=add,prio=1024,idle=30,table=0"
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
       << ",ip_proto="     << (uint16_t)UdpL4Protocol::PROT_NUMBER
       << ",ip_dst="       << VnfInfo::GetPointer (vnfId)->GetIpAddr ()
-      << ",udp_src="      << trafficId
+      << ",ip_src="       << srcAddress.GetIpv4 ()
+      << ",udp_src="      << srcAddress.GetPort ()
       << " goto:1";
   DpctlExecute (m_network->GetNetworkSwitchDpId (serverId), cmd.str ());
 }
 
 void
-SdnController::DeactivateVnf (
-  uint8_t vnfId, uint32_t serverId, uint16_t trafficId)
+SdnController::MoveVnf (
+  uint8_t vnfId, uint32_t srcServerId, uint32_t dstServerId, InetSocketAddress srcAddress)
 {
-  NS_LOG_FUNCTION (this << (uint16_t)vnfId << serverId << trafficId);
+  NS_LOG_FUNCTION (this << (uint16_t)vnfId << srcServerId << dstServerId << srcAddress);
 
-  // Remove the rule that sends the packets addressed to the VNF
-  // from the pipeline table 1.
+  // Set up the VNF on the destination server.
+  SetUpVnf (vnfId, dstServerId, srcAddress);
+
+  // Remove the rule that was sending the packets addressed to the VNF
+  // to the pipeline table 1 from the source server.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=del,prio=1024,table=0"
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
       << ",ip_proto="     << (uint16_t)UdpL4Protocol::PROT_NUMBER
       << ",ip_dst="       << VnfInfo::GetPointer (vnfId)->GetIpAddr ()
-      << ",udp_src="      << trafficId;
-  DpctlExecute (m_network->GetNetworkSwitchDpId (serverId), cmd.str ());
+      << ",ip_src="       << srcAddress.GetIpv4 ()
+      << ",udp_src="      << srcAddress.GetPort ();
+  DpctlExecute (m_network->GetNetworkSwitchDpId (srcServerId), cmd.str ());
+}
+
+void
+SdnController::RouteTraffic (
+  InetSocketAddress srcAddress, InetSocketAddress dstAddress,
+  uint32_t srcNodeId, uint32_t dstNodeId)
+{
+  NS_LOG_FUNCTION (this << srcAddress << dstAddress << srcNodeId << dstNodeId);
+
+  std::ostringstream cmd;
+  cmd << "flow-mod cmd=add,prio=128,idle=30,table=0"
+      << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
+      << ",ip_proto="     << (uint16_t)UdpL4Protocol::PROT_NUMBER
+      << ",ip_src="       << srcAddress.GetIpv4 ()
+      << ",ip_dst="       << dstAddress.GetIpv4 ()
+      << ",udp_src="      << srcAddress.GetPort ()
+      << ",udp_dst="      << dstAddress.GetPort ()
+      << " apply:output=" << m_network->GetNetworkPortNo (srcNodeId, dstNodeId);
+  DpctlExecute (m_network->GetNetworkSwitchDpId (srcNodeId), cmd.str ());
 }
 
 void

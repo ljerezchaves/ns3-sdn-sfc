@@ -69,46 +69,61 @@ public:
 
   /**
    * Notify this controller about a new service traffic flow in the network.
+   * \param srcAddress The source socket address (traffic ID).
+   * \param dstAddress The destination socket address.
    * \param srcHostId The source host node ID.
    * \param dstHostId The destination host node ID.
-   * \param srcPort The source UDP port number (traffic ID).
-   * \param dstPort The destination UDP port number (traffic ID).
    * \param vnfList The list of VNF IDs for this traffic.
    * \param startTime The application start time.
    * \param stopTime The application stop time.
    */
   void NotifyNewServiceTraffic (
-    uint32_t srcHostId, uint32_t dstHostId, uint16_t srcPort, uint16_t dstPort,
-    std::vector<uint8_t> vnfList, Time startTime, Time stopTime);
+    InetSocketAddress srcAddress, InetSocketAddress dstAddress,
+    uint32_t srcHostId, uint32_t dstHostId, std::vector<uint8_t> vnfList,
+    Time startTime, Time stopTime);
 
   /**
    * Notify this controller about a new background traffic flow in the network.
+   * \param srcAddress The source socket address (traffic ID).
+   * \param dstAddress The destination socket address.
    * \param srcHostId The source host node ID.
    * \param dstHostId The destination host node ID.
-   * \param srcPort The source UDP port number (traffic ID).
-   * \param dstPort The destination UDP port number (traffic ID).
    * \param startTime The application start time.
    * \param stopTime The application stop time.
    */
   void NotifyNewBackgroundTraffic (
-    uint32_t srcHostId, uint32_t dstHostId, uint16_t srcPort, uint16_t dstPort,
+    InetSocketAddress srcAddress, InetSocketAddress dstAddress,
+    uint32_t srcHostId, uint32_t dstHostId,
     Time startTime, Time stopTime);
 
   /**
    * Activate the VNF on a given server for a specific traffic.
    * \param vnfId The VNF ID
    * \param serverId The server ID
-   * \param traffic The traffic ID (UDP source port)
+   * \param srcAddress The source socket address (traffic ID)
    */
-  void ActivateVnf (uint8_t vnfId, uint32_t serverId, uint16_t trafficId);
+  void SetUpVnf (uint8_t vnfId, uint32_t serverId, InetSocketAddress srcAddress);
 
   /**
-   * Deactivate the VNF on a given server for a specific traffic.
+   * Move the active VNF from one server to the other for a specific traffic.
    * \param vnfId The VNF ID
-   * \param serverId The server ID
-   * \param traffic The traffic ID (UDP source port)
+   * \param srcServerId The source server ID
+   * \param dstServerId The destination server ID
+   * \param srcAddress The source socket address (traffic ID)
    */
-  void DeactivateVnf (uint8_t vnfId, uint32_t serverId, uint16_t trafficId);
+  void MoveVnf (uint8_t vnfId, uint32_t srcServerId, uint32_t dstServerId,
+                InetSocketAddress srcAddress);
+
+  /**
+   * Route network traffic from source to destination switches,
+   * considering source and destination addresses.
+   * \param srcAddress The source socket address.
+   * \param dstAddress The destination socket address.
+   * \param srcNodeId The source network switch.
+   * \param dstNodeId The destination network switch.
+   */
+  void RouteTraffic (InetSocketAddress srcAddress, InetSocketAddress dstAddress,
+                     uint32_t srcNodeId, uint32_t dstNodeId);
 
   /**
    * Perform an ARP resolution

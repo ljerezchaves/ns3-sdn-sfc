@@ -28,7 +28,11 @@ class VnfInfo;
 class SdnController : public OFSwitch13Controller
 {
 public:
-  SdnController ();          //!< Default constructor.
+  /**
+   * Complete constructor.
+   * \param sdnNetwork The SDN network.
+   */
+  SdnController (Ptr<SdnNetwork> sdnNetwork);
   virtual ~SdnController (); //!< Dummy destructor.
 
   /**
@@ -36,12 +40,6 @@ public:
    * \return The object TypeId.
    */
   static TypeId GetTypeId (void);
-
-  /**
-   * Save the SDN network pointer.
-   * \param network The SDN network.
-   */
-  void SetSdnNetwork (Ptr<SdnNetwork> network);
 
   /**
    * Notify this controller of a host connected to the OpenFlow network.

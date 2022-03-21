@@ -31,8 +31,8 @@ SdnController::IpMacMap_t SdnController::m_arpTable;
 // OpenFlow flow-mod flags.
 #define FLAGS_OVERLAP_RESET ((OFPFF_CHECK_OVERLAP | OFPFF_RESET_COUNTS))
 
-SdnController::SdnController ()
-  : m_network (0)
+SdnController::SdnController (Ptr<SdnNetwork> sdnNetwork)
+  : m_network (sdnNetwork)
 {
   NS_LOG_FUNCTION (this);
 }
@@ -47,17 +47,8 @@ SdnController::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::SdnController")
     .SetParent<OFSwitch13Controller> ()
-    .AddConstructor<SdnController> ()
   ;
   return tid;
-}
-
-void
-SdnController::SetSdnNetwork (Ptr<SdnNetwork> network)
-{
-  NS_LOG_FUNCTION (this << network);
-
-  m_network = network;
 }
 
 void

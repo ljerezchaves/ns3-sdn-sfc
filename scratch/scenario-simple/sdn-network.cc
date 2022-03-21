@@ -108,8 +108,7 @@ SdnNetwork::ConfigureTopology (void)
   // Create the SDN controller.
   Ptr<Node> controllerNode = CreateObject<Node> ();
   Names::Add ("ctrl", controllerNode);
-  m_controllerApp = CreateObject<SdnController> ();
-  m_controllerApp->SetSdnNetwork (Ptr<SdnNetwork> (this));
+  m_controllerApp = CreateObject<SdnController> (Ptr<SdnNetwork> (this));
   m_switchHelper->InstallController (controllerNode, m_controllerApp);
 
   // ---------------------------------------------------------------------------
@@ -228,6 +227,8 @@ SdnNetwork::ConfigureTopology (void)
       m_controllerApp->NotifyHostAttach (
         m_networkSwitchDevs.Get (i), m_networkToHostPorts.at (i)->GetPortNo (), m_hostDevices.Get (i));
     }
+
+  // TODO: Notify the controller about the created topology.
 }
 
 void

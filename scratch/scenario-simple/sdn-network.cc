@@ -65,6 +65,22 @@ SdnNetwork::DoDispose ()
   Object::DoDispose ();
 }
 
+uint32_t
+SdnNetwork::GetNetworkSwitchDpId (uint32_t nodeId) const
+{
+  NS_LOG_FUNCTION (this << nodeId);
+
+  return m_networkSwitchDevs.Get (nodeId)->GetDatapathId ();
+}
+
+uint32_t
+SdnNetwork::GetServerSwitchDpId (uint32_t serverId) const
+{
+  NS_LOG_FUNCTION (this << serverId);
+
+  return m_serverSwitchDevs.Get (serverId)->GetDatapathId ();
+}
+
 void
 SdnNetwork::EnablePcap (bool enable)
 {

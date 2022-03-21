@@ -74,6 +74,20 @@ public:
     uint32_t srcHostId, uint32_t dstHostId, Time startTime, Time stopTime,
     std::string pktSizeDesc = "", std::string pktIntervalDesc = "");
 
+  /**
+   * Get the network switch datapath ID.
+   * \param serverId The network ID
+   * \return The OpenFlow datapath ID
+   */
+  uint32_t GetNetworkSwitchDpId (uint32_t nodeId) const;
+
+  /**
+   * Get the server switch datapath ID.
+   * \param serverId The server ID
+   * \return The OpenFlow datapath ID
+   */
+  uint32_t GetServerSwitchDpId (uint32_t serverId) const;
+
 protected:
   /** Destructor implementation. */
   virtual void DoDispose (void);

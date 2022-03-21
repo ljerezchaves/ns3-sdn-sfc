@@ -106,6 +106,14 @@ VnfInfo::GetUdpPort (void) const
   return m_vnfUdpPort;
 }
 
+InetSocketAddress
+VnfInfo::GetInetAddr (void) const
+{
+  NS_LOG_FUNCTION (this);
+
+  return InetSocketAddress (m_vnfIpAddress, m_vnfUdpPort);
+}
+
 double
 VnfInfo::GetCsf (void) const
 {

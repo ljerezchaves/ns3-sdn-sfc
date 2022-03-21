@@ -49,12 +49,13 @@ public:
    * \return The requested information.
    */
   //\{
-  uint8_t       GetVnfId      (void) const;
-  Ipv4Address   GetIpAddr     (void) const;
-  Mac48Address  GetMacAddr    (void) const;
-  uint16_t      GetUdpPort    (void) const;
-  double        GetCsf        (void) const;
-  double        GetNsf        (void) const;
+  uint8_t           GetVnfId      (void) const;
+  Ipv4Address       GetIpAddr     (void) const;
+  Mac48Address      GetMacAddr    (void) const;
+  uint16_t          GetUdpPort    (void) const;
+  InetSocketAddress GetInetAddr   (void) const;
+  double            GetCsf        (void) const;
+  double            GetNsf        (void) const;
   //\}
 
   /**

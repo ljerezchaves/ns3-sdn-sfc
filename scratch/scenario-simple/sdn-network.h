@@ -28,6 +28,8 @@ class VnfInfo;
 /** The OpenFlow network. */
 class SdnNetwork : public Object
 {
+  friend class SdnController;
+
 public:
   SdnNetwork ();          //!< Default constructor.
   virtual ~SdnNetwork (); //!< Dummy destructor.
@@ -43,28 +45,6 @@ public:
    * \param enable True to enable the PCAP traces.
    */
   void EnablePcap (bool enable);
-
-protected:
-  /** Destructor implementation. */
-  virtual void DoDispose (void);
-
-  // Inherited from ObjectBase.
-  virtual void NotifyConstructionCompleted (void);
-
-  /**
-   * Configure the SDN network topology with network, servers and host nodes.
-   */
-  void ConfigureTopology (void);
-
-  /**
-   * Create the VNFs and install copies of them in server nodes.
-   */
-  void ConfigureFunctions (void);
-
-  /**
-   * Configure the aplications for generating traffic in the network.
-   */
-  void ConfigureTraffic (void);
 
   /**
    * Create a new SFC traffic flow in the network.
@@ -93,6 +73,23 @@ protected:
   void NewBackgroundTraffic (
     uint32_t srcHostId, uint32_t dstHostId, Time startTime, Time stopTime,
     std::string pktSizeDesc = "", std::string pktIntervalDesc = "");
+
+protected:
+  /** Destructor implementation. */
+  virtual void DoDispose (void);
+
+  // Inherited from ObjectBase.
+  virtual void NotifyConstructionCompleted (void);
+
+  /**
+   * Configure the SDN network topology with network, servers and host nodes.
+   */
+  void ConfigureTopology (void);
+
+  /**
+   * Create the VNFs and install copies of them in server nodes.
+   */
+  void ConfigureFunctions (void);
 
 private:
   Ptr<SdnController>            m_controllerApp;    //!< Controller app

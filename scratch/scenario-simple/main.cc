@@ -54,11 +54,13 @@ main (int argc, char *argv[])
   EnableProgress (progress);
   EnableVerbose (verbose);
 
+  // ------------------------------------------------------------------------ //
   // Create the SDN network.
   Ptr<SdnNetwork> sdnNetwork = CreateObjectWithAttributes<SdnNetwork> (
     "NumberVnfs", UintegerValue (6), "NumberNodes", UintegerValue (3));
   sdnNetwork->EnablePcap (pcapLog);
 
+  // Configure VNFs
   // VNFs 0 and 1: network service
   VnfInfo::GetPointer (0)->SetScalingFactors (0.3, 0.9);
   VnfInfo::GetPointer (1)->SetScalingFactors (0.3, 0.9);
@@ -68,6 +70,16 @@ main (int argc, char *argv[])
   // VNFs 4 and 5: expansion service
   VnfInfo::GetPointer (4)->SetScalingFactors (1.4, 1.8);
   VnfInfo::GetPointer (5)->SetScalingFactors (1.4, 1.8);
+
+  // Create network traffic
+  sdnNetwork->NewServiceTraffic (2, 2, {5, 4}, Seconds (1), Seconds (6));
+  sdnNetwork->NewServiceTraffic (2, 2, {3, 2}, Seconds (5), Seconds (10),
+                                 "ns3::ConstantRandomVariable[Constant=1250]",
+                                 "ns3::ConstantRandomVariable[Constant=0.5]");
+
+  sdnNetwork->NewBackgroundTraffic (2, 2, Seconds (0.5), Seconds (4));
+
+  // ------------------------------------------------------------------------ //
 
   // Populate routing tables.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();

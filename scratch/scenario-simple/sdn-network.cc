@@ -87,10 +87,9 @@ SdnNetwork::NotifyConstructionCompleted (void)
   m_switchHelper = CreateObject<OFSwitch13InternalHelper> ();
   m_csmaHelper.SetDeviceAttribute ("Mtu", UintegerValue (1492));
 
-  // Configure network topology, VNFs and applications (respect this order!).
+  // Configure network topology and VNFs (respect this order!).
   ConfigureTopology ();
   ConfigureFunctions ();
-  ConfigureTraffic ();
 
   // Let's connect the OpenFlow switches to the controller. From this point
   // on it is not possible to change the OpenFlow network configuration.
@@ -227,8 +226,6 @@ SdnNetwork::ConfigureTopology (void)
       m_controllerApp->NotifyHostAttach (
         m_networkSwitchDevs.Get (i), m_networkToHostPorts.at (i)->GetPortNo (), m_hostDevices.Get (i));
     }
-
-  // TODO: Notify the controller about the created topology.
 }
 
 void
@@ -310,26 +307,6 @@ SdnNetwork::ConfigureFunctions (void)
 }
 
 void
-SdnNetwork::ConfigureTraffic (void)
-{
-  NS_LOG_FUNCTION (this);
-
-  // Initial activations of VNFs.
-  // FIXME: Remove this.
-  for (uint16_t v = 0; v < m_numVnfs; v++)
-    {
-      m_controllerApp->ActivateVnf (m_networkSwitchDevs.Get (2), VnfInfo::GetPointer (v));
-    }
-
-  NewServiceTraffic (2, 2, {5, 4}, Seconds (1), Seconds (6));
-  NewServiceTraffic (2, 2, {3, 2}, Seconds (5), Seconds (10),
-                     "ns3::ConstantRandomVariable[Constant=1250]",
-                     "ns3::ConstantRandomVariable[Constant=0.5]");
-
-  NewBackgroundTraffic (2, 2, Seconds (0.5), Seconds (4));
-}
-
-void
 SdnNetwork::NewServiceTraffic (
   uint32_t srcHostId, uint32_t dstHostId,
   std::vector<uint8_t> vnfList, Time startTime, Time stopTime,
@@ -351,8 +328,7 @@ SdnNetwork::NewServiceTraffic (
     "LocalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (srcHostId)),
     "LocalUdpPort",   UintegerValue (srcPortNo),
     "FinalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (dstHostId)),
-    "FinalUdpPort",   UintegerValue (dstPortNo)
-  );
+    "FinalUdpPort",   UintegerValue (dstPortNo));
   sourceApp->SetVnfList (vnfList);
   sourceApp->SetStartTime (startTime);
   sourceApp->SetStopTime (stopTime);
@@ -369,12 +345,13 @@ SdnNetwork::NewServiceTraffic (
   // Create the sink application
   Ptr<SinkApp> sinkApp = CreateObjectWithAttributes<SinkApp> (
     "LocalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (dstHostId)),
-    "LocalUdpPort",   UintegerValue (dstPortNo)
-  );
+    "LocalUdpPort",   UintegerValue (dstPortNo));
   sinkApp->SetStartTime (Seconds (0));
   m_hostNodes.Get (dstHostId)->AddApplication (sinkApp);
 
-  // TODO: Notify the controller about start and stop events.
+  // Notify the controller about this new traffic
+  m_controllerApp->NotifyNewServiceTraffic (
+    srcHostId, dstHostId, srcPortNo, dstPortNo, vnfList, startTime, stopTime);
 }
 
 void
@@ -398,8 +375,7 @@ SdnNetwork::NewBackgroundTraffic (
     "LocalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (srcHostId)),
     "LocalUdpPort",   UintegerValue (srcPortNo),
     "FinalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (dstHostId)),
-    "FinalUdpPort",   UintegerValue (dstPortNo)
-  );
+    "FinalUdpPort",   UintegerValue (dstPortNo));
   sourceApp->SetStartTime (startTime);
   sourceApp->SetStopTime (stopTime);
   if (!pktSizeDesc.empty ())
@@ -415,12 +391,13 @@ SdnNetwork::NewBackgroundTraffic (
   // Create the sink application
   Ptr<SinkApp> sinkApp = CreateObjectWithAttributes<SinkApp> (
     "LocalIpAddress", Ipv4AddressValue (m_hostIfaces.GetAddress (dstHostId)),
-    "LocalUdpPort",   UintegerValue (dstPortNo)
-  );
+    "LocalUdpPort",   UintegerValue (dstPortNo));
   sinkApp->SetStartTime (Seconds (0));
   m_hostNodes.Get (dstHostId)->AddApplication (sinkApp);
 
-  // TODO: Notify the controller about start and stop events.
+  // Notify the controller about this new traffic
+  m_controllerApp->NotifyNewBackgroundTraffic (
+    srcHostId, dstHostId, srcPortNo, dstPortNo, startTime, stopTime);
 }
 
 } // namespace ns3

@@ -68,6 +68,33 @@ public:
     Ptr<VnfInfo> vnfInfo);
 
   /**
+   * Notify this controller about a new service traffic flow in the network.
+   * \param srcHostId The source host node ID.
+   * \param dstHostId The destination host node ID.
+   * \param srcPort The source UDP port number (traffic ID).
+   * \param dstPort The destination UDP port number (traffic ID).
+   * \param vnfList The list of VNF IDs for this traffic.
+   * \param startTime The application start time.
+   * \param stopTime The application stop time.
+   */
+  void NotifyNewServiceTraffic (
+    uint32_t srcHostId, uint32_t dstHostId, uint16_t srcPort, uint16_t dstPort,
+    std::vector<uint8_t> vnfList, Time startTime, Time stopTime);
+
+  /**
+   * Notify this controller about a new background traffic flow in the network.
+   * \param srcHostId The source host node ID.
+   * \param dstHostId The destination host node ID.
+   * \param srcPort The source UDP port number (traffic ID).
+   * \param dstPort The destination UDP port number (traffic ID).
+   * \param startTime The application start time.
+   * \param stopTime The application stop time.
+   */
+  void NotifyNewBackgroundTraffic (
+    uint32_t srcHostId, uint32_t dstHostId, uint16_t srcPort, uint16_t dstPort,
+    Time startTime, Time stopTime);
+
+  /**
    * Activate the VNF on the given switch device.
    * \param switchDevice The OpenFlow switch device
    * \param vnfInfo The VNF information

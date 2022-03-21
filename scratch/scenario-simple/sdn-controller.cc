@@ -138,6 +138,28 @@ SdnController::NotifyVnfAttach (
 }
 
 void
+SdnController::NotifyNewServiceTraffic (
+  uint32_t srcHostId, uint32_t dstHostId, uint16_t srcPort, uint16_t dstPort,
+  std::vector<uint8_t> vnfList, Time startTime, Time stopTime)
+{
+  NS_LOG_FUNCTION (this << srcHostId << dstHostId << srcPort <<
+                   dstPort << startTime << stopTime);
+
+  // TODO
+}
+
+void
+SdnController::NotifyNewBackgroundTraffic (
+  uint32_t srcHostId, uint32_t dstHostId, uint16_t srcPort, uint16_t dstPort,
+  Time startTime, Time stopTime)
+{
+  NS_LOG_FUNCTION (this << srcHostId << dstHostId << srcPort <<
+                   dstPort << startTime << stopTime);
+
+  // TODO
+}
+
+void
 SdnController::ActivateVnf (
   Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo)
 {

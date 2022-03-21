@@ -95,18 +95,20 @@ public:
     Time startTime, Time stopTime);
 
   /**
-   * Activate the VNF on the given switch device.
-   * \param switchDevice The OpenFlow switch device
-   * \param vnfInfo The VNF information
+   * Activate the VNF on a given server for a specific traffic.
+   * \param vnfId The VNF ID
+   * \param serverId The server ID
+   * \param traffic The traffic ID (UDP source port)
    */
-  void ActivateVnf (Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo);
+  void ActivateVnf (uint8_t vnfId, uint32_t serverId, uint16_t trafficId);
 
   /**
-   * Deactivate the VNF on the given switch device
-   * \param switchDevice The OpenFlow switch device
-   * \param vnfInfo The VNF information
+   * Deactivate the VNF on a given server for a specific traffic.
+   * \param vnfId The VNF ID
+   * \param serverId The server ID
+   * \param traffic The traffic ID (UDP source port)
    */
-  void DeactivateVnf (Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo);
+  void DeactivateVnf (uint8_t vnfId, uint32_t serverId, uint16_t trafficId);
 
   /**
    * Perform an ARP resolution

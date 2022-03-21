@@ -146,6 +146,12 @@ SdnController::NotifyNewServiceTraffic (
                    dstPort << startTime << stopTime);
 
   // TODO
+
+  for (auto vnfId : vnfList)
+    {
+      ActivateVnf (vnfId, srcHostId, srcPort);
+    }
+
 }
 
 void
@@ -161,32 +167,36 @@ SdnController::NotifyNewBackgroundTraffic (
 
 void
 SdnController::ActivateVnf (
-  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo)
+  uint8_t vnfId, uint32_t serverId, uint16_t trafficId)
 {
-  NS_LOG_FUNCTION (this << switchDevice << vnfInfo);
+  NS_LOG_FUNCTION (this << (uint16_t)vnfId << serverId << trafficId);
 
-  // This rule sends the packets addressed to the VNF to the pipeline table 1.
+  // Sends the packets addressed to the VNF to the pipeline table 1.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=add,prio=1024,table=0"
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
-      << ",ip_dst="       << vnfInfo->GetIpAddr ()
+      << ",ip_proto="     << (uint16_t)UdpL4Protocol::PROT_NUMBER
+      << ",ip_dst="       << VnfInfo::GetPointer (vnfId)->GetIpAddr ()
+      << ",udp_src="      << trafficId
       << " goto:1";
-  DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
+  DpctlExecute (m_network->GetNetworkSwitchDpId (serverId), cmd.str ());
 }
 
 void
 SdnController::DeactivateVnf (
-  Ptr<OFSwitch13Device> switchDevice, Ptr<VnfInfo> vnfInfo)
+  uint8_t vnfId, uint32_t serverId, uint16_t trafficId)
 {
-  NS_LOG_FUNCTION (this << switchDevice << vnfInfo);
+  NS_LOG_FUNCTION (this << (uint16_t)vnfId << serverId << trafficId);
 
   // Remove the rule that sends the packets addressed to the VNF
-  // to the pipeline table 1.
+  // from the pipeline table 1.
   std::ostringstream cmd;
   cmd << "flow-mod cmd=del,prio=1024,table=0"
       << " eth_type="     << Ipv4L3Protocol::PROT_NUMBER
-      << ",ip_dst="       << vnfInfo->GetIpAddr ();
-  DpctlExecute (switchDevice->GetDatapathId (), cmd.str ());
+      << ",ip_proto="     << (uint16_t)UdpL4Protocol::PROT_NUMBER
+      << ",ip_dst="       << VnfInfo::GetPointer (vnfId)->GetIpAddr ()
+      << ",udp_src="      << trafficId;
+  DpctlExecute (m_network->GetNetworkSwitchDpId (serverId), cmd.str ());
 }
 
 void

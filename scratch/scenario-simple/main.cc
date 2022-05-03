@@ -21,6 +21,7 @@
 #include <ns3/ofswitch13-module.h>
 #include "sdn-network.h"
 #include "vnf-info.h"
+#include "ns3/opengym-module.h"
 
 using namespace ns3;
 
@@ -28,6 +29,114 @@ void EnableProgress (int);
 void EnableLibLog  (bool);
 void EnableVerbose (bool);
 void ForceDefaults (void);
+
+/*
+Define observation space
+*/
+Ptr<OpenGymSpace> MyGetObservationSpace(void)
+{
+  uint32_t nodeNum = 5;
+  float low = 0.0;
+  float high = 10.0;
+  std::vector<uint32_t> shape = {nodeNum,};
+  std::string dtype = TypeNameGet<uint32_t> ();
+  Ptr<OpenGymBoxSpace> space = CreateObject<OpenGymBoxSpace> (low, high, shape, dtype);
+  NS_LOG_UNCOND ("MyGetObservationSpace: " << space);
+  return space;
+}
+
+/*
+Define action space
+*/
+Ptr<OpenGymSpace> MyGetActionSpace(void)
+{
+  uint32_t nodeNum = 5;
+
+  Ptr<OpenGymDiscreteSpace> space = CreateObject<OpenGymDiscreteSpace> (nodeNum);
+  NS_LOG_UNCOND ("MyGetActionSpace: " << space);
+  return space;
+}
+
+/*
+Define game over condition
+*/
+bool MyGetGameOver(void)
+{
+
+  bool isGameOver = false;
+  bool test = false;
+  static float stepCounter = 0.0;
+  stepCounter += 1;
+  if (stepCounter == 10 && test) {
+      isGameOver = true;
+  }
+  NS_LOG_UNCOND ("MyGetGameOver: " << isGameOver);
+  return isGameOver;
+}
+
+/*
+Collect observations
+*/
+Ptr<OpenGymDataContainer> MyGetObservation(void)
+{
+  uint32_t nodeNum = 5;
+  uint32_t low = 0.0;
+  uint32_t high = 10.0;
+  Ptr<UniformRandomVariable> rngInt = CreateObject<UniformRandomVariable> ();
+
+  std::vector<uint32_t> shape = {nodeNum,};
+  Ptr<OpenGymBoxContainer<uint32_t> > box = CreateObject<OpenGymBoxContainer<uint32_t> >(shape);
+
+  // generate random data
+  for (uint32_t i = 0; i<nodeNum; i++){
+    uint32_t value = rngInt->GetInteger(low, high);
+    box->AddValue(value);
+  }
+
+  NS_LOG_UNCOND ("MyGetObservation: " << box);
+  return box;
+}
+
+/*
+Define reward function
+*/
+float MyGetReward(void)
+{
+  static float reward = 0.0;
+  reward += 1;
+  return reward;
+}
+
+/*
+Define extra info. Optional
+*/
+std::string MyGetExtraInfo(void)
+{
+  std::string myInfo = "testInfo";
+  myInfo += "|123";
+  NS_LOG_UNCOND("MyGetExtraInfo: " << myInfo);
+  return myInfo;
+}
+
+
+/*
+Execute received actions
+*/
+bool MyExecuteActions(Ptr<OpenGymDataContainer> action)
+{
+  Ptr<OpenGymDiscreteContainer> discrete = DynamicCast<OpenGymDiscreteContainer>(action);
+  NS_LOG_UNCOND ("MyExecuteActions: " << action);
+  NS_LOG_UNCOND ("Here you enforce the decision");
+
+  return true;
+}
+
+void ScheduleNextStateRead(double envStepTime, Ptr<OpenGymInterface> openGym)
+{
+  std::cout << "----------------------" << std::endl;
+  Simulator::Schedule (Seconds(envStepTime), &ScheduleNextStateRead, envStepTime, openGym);
+  openGym->NotifyCurrentState();
+}
 
 int
 main (int argc, char *argv[])
@@ -38,6 +147,9 @@ main (int argc, char *argv[])
   bool  verbose  = false;
   bool  libLog   = false;
   bool  pcapLog  = false;
+  bool  enableRl = false;
+  double envStepTime = 20; //seconds, ns3gym env step time interval
+  uint32_t openGymPort = 5556;
 
   // Parse the command line arguments and force default attributes.
   CommandLine cmd;
@@ -46,6 +158,8 @@ main (int argc, char *argv[])
   cmd.AddValue ("SimTime",  "Simulation time (sec)", simTime);
   cmd.AddValue ("Verbose",  "Enable verbose output.", verbose);
   cmd.AddValue ("Pcap",     "Enable PCAP output.", pcapLog);
+  cmd.AddValue ("enableRl",     "Enable RL", enableRl);
+
   cmd.Parse (argc, argv);
   ForceDefaults ();
 
@@ -53,6 +167,21 @@ main (int argc, char *argv[])
   EnableLibLog (libLog);
   EnableProgress (progress);
   EnableVerbose (verbose);
+
+  // OpenGym Env
+  Ptr<OpenGymInterface> openGym = CreateObject<OpenGymInterface> (openGymPort);
+  openGym->SetGetActionSpaceCb( MakeCallback (&MyGetActionSpace) );
+  openGym->SetGetObservationSpaceCb( MakeCallback (&MyGetObservationSpace) );
+  openGym->SetGetGameOverCb( MakeCallback (&MyGetGameOver) );
+  openGym->SetGetObservationCb( MakeCallback (&MyGetObservation) );
+  openGym->SetGetRewardCb( MakeCallback (&MyGetReward) );
+  openGym->SetGetExtraInfoCb( MakeCallback (&MyGetExtraInfo) );
+  openGym->SetExecuteActionsCb( MakeCallback (&MyExecuteActions) );
+
+  if (enableRl)
+    {
+      Simulator::Schedule (Seconds(0.0), &ScheduleNextStateRead, envStepTime, openGym);
+    }
 
   // ------------------------------------------------------------------------ //
   // Create the SDN network.
@@ -109,6 +238,7 @@ main (int argc, char *argv[])
   Simulator::Stop (Seconds (simTime) + MilliSeconds (100));
   Simulator::Run ();
   std::cout << "Done!" << std::endl;
+  openGym->NotifySimulationEnd();
   Simulator::Destroy ();
   sdnNetwork->Dispose ();
   sdnNetwork = 0;

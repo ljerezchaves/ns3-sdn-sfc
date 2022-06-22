@@ -109,7 +109,31 @@ Define reward function
 float MyGetReward(void)
 {
   static float reward = 0.0;
-  reward += 1;
+  uint32_t nodeNum = NodeList::GetNNodes ();
+
+  int totalPackets = 0;
+  for (uint32_t i=0; i<nodeNum; i++) 
+    {
+      Ptr<Node> node = NodeList::GetNode (i);
+      for (uint32_t n=0; n<node->GetNDevices (); n++)
+        {
+          // we are using CsmaNetDevice
+          Ptr<CsmaNetDevice> dev = DynamicCast <CsmaNetDevice> (node->GetDevice (n));
+          if (dev)
+            {
+              totalPackets += dev->GetQueue ()->GetNPackets ();
+            }
+        }
+    }
+  int avgPackets = totalPackets / nodeNum;
+  int invAvgPacktes = 0;
+  if (avgPackets > 0)
+    {
+      invAvgPacktes = 1 / avgPackets;
+    }
+
+  // we need to take into account even the employed resources
+  reward = 1 + invAvgPacktes;
   return reward;
 }
 

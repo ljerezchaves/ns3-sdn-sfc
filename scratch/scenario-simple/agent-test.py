@@ -23,7 +23,7 @@ args = parser.parse_args()
 startSim = bool(args.start)
 iterationNum = int(args.iterations)
 
-port = 5556
+port = 5557
 simTime = 20 # seconds
 stepTime = 0.5  # seconds
 seed = 0

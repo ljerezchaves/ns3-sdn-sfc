@@ -35,12 +35,13 @@ Define observation space
 */
 Ptr<OpenGymSpace> MyGetObservationSpace(void)
 {
-  uint32_t nodeNum = 5;
+  uint32_t nodeNum = NodeList::GetNNodes ();
   float low = 0.0;
-  float high = 10.0;
+  float high = 100.0; // max queue lenght by default
   std::vector<uint32_t> shape = {nodeNum,};
-  std::string dtype = TypeNameGet<uint32_t> ();
-  Ptr<OpenGymBoxSpace> space = CreateObject<OpenGymBoxSpace> (low, high, shape, dtype);
+  NS_LOG_UNCOND ("NodeNum " << nodeNum);
+  std::string type = TypeNameGet<uint32_t> ();
+  Ptr<OpenGymBoxSpace> space = CreateObject<OpenGymBoxSpace>(low,high,shape,type);
   NS_LOG_UNCOND ("MyGetObservationSpace: " << space);
   return space;
 }
@@ -79,21 +80,26 @@ Collect observations
 */
 Ptr<OpenGymDataContainer> MyGetObservation(void)
 {
-  uint32_t nodeNum = 5;
-  uint32_t low = 0.0;
-  uint32_t high = 10.0;
-  Ptr<UniformRandomVariable> rngInt = CreateObject<UniformRandomVariable> ();
-
+  uint32_t nodeNum = NodeList::GetNNodes ();
   std::vector<uint32_t> shape = {nodeNum,};
-  Ptr<OpenGymBoxContainer<uint32_t> > box = CreateObject<OpenGymBoxContainer<uint32_t> >(shape);
+  Ptr<OpenGymBoxContainer<uint32_t>> box = CreateObject<OpenGymBoxContainer<uint32_t>>(shape);
 
-  // generate random data
-  for (uint32_t i = 0; i<nodeNum; i++){
-    uint32_t value = rngInt->GetInteger(low, high);
-    box->AddValue(value);
-  }
-
-  NS_LOG_UNCOND ("MyGetObservation: " << box);
+  for (uint32_t i=0; i<nodeNum; i++) 
+    {
+      Ptr<Node> node = NodeList::GetNode (i);
+      int nodePackets = 0;
+      for (uint32_t n=0; n<node->GetNDevices (); n++)
+        {
+          // we are using CsmaNetDevice
+          Ptr<CsmaNetDevice> dev = DynamicCast <CsmaNetDevice> (node->GetDevice (n));
+          if (dev)
+            {
+              nodePackets += dev->GetQueue ()->GetNPackets ();
+            }
+        }
+      NS_LOG_UNCOND ("Node "<< i << ", Packets in queue " << nodePackets);
+      box->AddValue(nodePackets);
+    }
   return box;
 }
 
@@ -149,7 +155,7 @@ main (int argc, char *argv[])
   bool  pcapLog  = false;
   bool  enableRl = false;
   double envStepTime = 20; //seconds, ns3gym env step time interval
-  uint32_t openGymPort = 5556;
+  uint32_t openGymPort = 5557;
 
   // Parse the command line arguments and force default attributes.
   CommandLine cmd;
